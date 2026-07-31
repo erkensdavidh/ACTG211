@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CVP Explorer — ACTG 211</title>
+<style>
+  :root{
+    --red:#A32638; --ink:#333F48; --gray:#667085; --rule:#DDE1E5;
+    --page:#FFFFFF; --light:#F4F5F6; --tint:#FBEEF0;
+    --profit:#1E8449; --loss:#C0392B; --wall:#8A929A;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);
+    -webkit-text-size-adjust:100%}
+  body{padding:18px 16px 42px;max-width:1180px;margin:0 auto}
+
+  header{border-bottom:2px solid var(--red);padding-bottom:12px;margin-bottom:20px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--red);margin:0 0 4px}
+  h1{font-family:var(--serif);font-size:clamp(25px,5.2vw,38px);line-height:1.08;margin:0;font-weight:700}
+  .sub{color:var(--gray);font-size:14px;margin:7px 0 0;max-width:62ch;line-height:1.45}
+
+  .grid{display:grid;gap:22px}
+  @media (min-width:900px){ .grid{grid-template-columns:minmax(0,1.32fr) minmax(310px,1fr);align-items:start} }
+
+  /* ---- verdict: the one loud element ---- */
+  .verdict{border:1.5px solid var(--rule);border-left-width:6px;border-radius:8px;
+    padding:13px 15px;margin-bottom:16px;background:var(--light)}
+  .verdict.ok{border-left-color:var(--profit);background:#F1F8F3}
+  .verdict.no{border-left-color:var(--loss);background:var(--tint)}
+  .verdict .headline{font-family:var(--serif);font-size:clamp(17px,3.4vw,22px);line-height:1.22;margin:0}
+  .verdict .because{font-size:13.5px;color:var(--gray);margin:6px 0 0;line-height:1.45}
+
+  figure{margin:0}
+  svg{width:100%;height:auto;display:block;touch-action:pan-y}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:9px 2px 0;font-size:12px;color:var(--gray)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .swatch{width:15px;height:3px;border-radius:2px;display:inline-block}
+  .swatch.box{height:11px;width:11px;border-radius:2px}
+
+  /* ---- controls ---- */
+  .panel{border:1px solid var(--rule);border-radius:10px;padding:15px}
+  .panel + .panel{margin-top:16px}
+  .panel h2{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--red);margin:0 0 12px}
+
+  .ctl{margin-bottom:15px}
+  .ctl:last-child{margin-bottom:0}
+  .ctl-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+  .ctl label{font-size:13.5px;font-weight:600}
+  .val{font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;color:var(--red)}
+  input[type=range]{width:100%;accent-color:var(--red);height:26px;margin:0}
+  input[type=range]:focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
+
+  .presets{display:flex;gap:9px;flex-wrap:wrap}
+  button{font:inherit;font-size:13px;font-weight:600;padding:9px 13px;border-radius:7px;
+    border:1.5px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:var(--ink);color:#fff}
+  button:focus-visible{outline:2.5px solid var(--red);outline-offset:2px}
+  button[aria-pressed=true]{background:var(--ink);color:#fff}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:7px 0;border-bottom:1px solid var(--rule)}
+  tr:last-child th,tr:last-child td{border-bottom:0}
+  th{font-weight:600;color:var(--gray)}
+  td{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  td.dim{color:var(--gray);font-weight:600}
+
+  footer{margin-top:26px;padding-top:13px;border-top:1px solid var(--rule);
+    font-size:12px;color:var(--gray);line-height:1.5}
+  @media (prefers-reduced-motion:no-preference){
+    .verdict{transition:background-color .18s ease, border-color .18s ease}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">ACTG 211 · Chapter 2</p>
+  <h1>CVP Explorer</h1>
+  <p class="sub">The Chapman Bookstore sells printed t-shirts. Move the four inputs and watch
+    break-even move with them. The shaded wedges are the same ones from the graph in class:
+    red where cost beats revenue, green where revenue beats cost.</p>
+</header>
+
+<div class="grid">
+  <section>
+    <div class="verdict" id="verdict">
+      <p class="headline" id="verdictHead"></p>
+      <p class="because" id="verdictWhy"></p>
+    </div>
+
+    <figure>
+      <svg id="chart" viewBox="0 0 720 430" role="img" aria-labelledby="chartTitle">
+        <title id="chartTitle">Total revenue and total cost against shirts sold</title>
+      </svg>
+      <div class="legend">
+        <span><i class="swatch" style="background:#A32638"></i> Total revenue</span>
+        <span><i class="swatch" style="background:#333F48"></i> Total cost</span>
+        <span><i class="swatch" style="background:#B9BEC4"></i> Fixed cost</span>
+        <span><i class="swatch box" style="background:#C0392B;opacity:.22"></i> Loss</span>
+        <span><i class="swatch box" style="background:#1E8449;opacity:.22"></i> Profit</span>
+        <span><i class="swatch box" style="background:#8A929A;opacity:.18"></i> Beyond capacity</span>
+      </div>
+    </figure>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Start from</h2>
+      <div class="presets">
+        <button type="button" id="pToday" aria-pressed="false">Bookstore today</button>
+        <button type="button" id="pAuto" aria-pressed="false">Automated</button>
+      </div>
+      <p class="because" id="presetNote" style="margin:10px 0 0"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Inputs</h2>
+      <div class="ctl">
+        <div class="ctl-top"><label for="price">Price per shirt</label><span class="val" id="vPrice"></span></div>
+        <input type="range" id="price" min="10" max="60" step="1">
+      </div>
+      <div class="ctl">
+        <div class="ctl-top"><label for="vc">Variable cost per shirt</label><span class="val" id="vVc"></span></div>
+        <input type="range" id="vc" min="0" max="45" step="1">
+      </div>
+      <div class="ctl">
+        <div class="ctl-top"><label for="fc">Fixed costs per month</label><span class="val" id="vFc"></span></div>
+        <input type="range" id="fc" min="0" max="20000" step="250">
+      </div>
+      <div class="ctl">
+        <div class="ctl-top"><label for="cap">Capacity — most it can make</label><span class="val" id="vCap"></span></div>
+        <input type="range" id="cap" min="100" max="1200" step="25">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>What that gives you</h2>
+      <table>
+        <tbody>
+          <tr><th scope="row">Contribution margin per shirt</th><td id="oCm"></td></tr>
+          <tr><th scope="row">CM ratio</th><td id="oCmr"></td></tr>
+          <tr><th scope="row">Break-even, shirts</th><td id="oBeU"></td></tr>
+          <tr><th scope="row">Break-even, sales dollars</th><td id="oBeD"></td></tr>
+          <tr><th scope="row">Operating income at capacity</th><td id="oOi"></td></tr>
+          <tr><th scope="row">Margin of safety at capacity</th><td id="oMos" class="dim"></td></tr>
+          <tr><th scope="row">Degree of operating leverage</th><td id="oDol" class="dim"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<footer>
+  Break-even shirts = fixed costs ÷ contribution margin per shirt. Margin of safety and
+  operating leverage are measured at capacity, since that is the most this store can sell.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var S = { price:40, vc:20, fc:5000, cap:500 };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var money = function(n){ return "$" + Math.round(n).toLocaleString("en-US"); };
+  var money2 = function(n){ return "$" + n.toFixed(2); };
+
+  function model(){
+    var cm = S.price - S.vc;
+    var beU = cm > 0 ? S.fc / cm : Infinity;
+    return {
+      cm: cm,
+      cmr: S.price > 0 ? cm / S.price : 0,
+      beU: beU,
+      beD: beU * S.price,
+      reachable: cm > 0 && beU <= S.cap,
+      oi: S.cap * cm - S.fc
+    };
+  }
+
+  /* ---------- chart ---------- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(name, attrs){
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+
+  function draw(){
+    var m = model();
+    var svg = $("chart");
+    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+
+    var L = 74, R = 18, T = 16, B = 52;
+    var W = 720, H = 430, pw = W - L - R, ph = H - T - B;
+
+    // X range always shows capacity, and break-even too when it lies beyond it.
+    var xMax = S.cap * 1.15;
+    if (isFinite(m.beU) && m.beU > S.cap) xMax = Math.max(xMax, m.beU * 1.12);
+    var yMax = Math.max(S.price * xMax, S.fc + S.vc * xMax, 1) * 1.06;
+
+    var X = function(u){ return L + (u / xMax) * pw; };
+    var Y = function(d){ return T + (1 - d / yMax) * ph; };
+    var rev = function(u){ return S.price * u; };
+    var cost = function(u){ return S.fc + S.vc * u; };
+
+    // gridlines + value labels
+    var steps = 4;
+    for (var i = 0; i <= steps; i++){
+      var v = yMax * i / steps;
+      svg.appendChild(el("line", { x1:L, x2:L+pw, y1:Y(v), y2:Y(v),
+        stroke:"#E7E9EC", "stroke-width":1 }));
+      var tx = el("text", { x:L-9, y:Y(v)+4, "text-anchor":"end",
+        "font-size":11.5, fill:"#667085", "font-family":"system-ui,sans-serif" });
+      tx.textContent = v >= 1000 ? "$" + Math.round(v/1000) + "k" : "$" + Math.round(v);
+      svg.appendChild(tx);
+    }
+
+    // profit / loss wedges, clipped to what the store can actually make
+    var edge = Math.min(S.cap, xMax);
+    var cross = (m.cm > 0 && isFinite(m.beU)) ? Math.min(m.beU, edge) : edge;
+    function wedge(a, b, fill){
+      if (b - a < 0.5) return;
+      var pts = [];
+      var N = 48, k;
+      for (k = 0; k <= N; k++){ var u = a + (b-a)*k/N; pts.push(X(u)+","+Y(rev(u))); }
+      for (k = N; k >= 0; k--){ var u2 = a + (b-a)*k/N; pts.push(X(u2)+","+Y(cost(u2))); }
+      svg.appendChild(el("polygon", { points:pts.join(" "), fill:fill, opacity:.22 }));
+    }
+    wedge(0, cross, "#C0392B");
+    if (m.cm > 0 && isFinite(m.beU) && m.beU < edge) wedge(m.beU, edge, "#1E8449");
+
+    // the capacity wall — the signature: everything right of it is imaginary
+    if (S.cap < xMax){
+      svg.appendChild(el("rect", { x:X(S.cap), y:T, width:Math.max(0, X(xMax)-X(S.cap)),
+        height:ph, fill:"#8A929A", opacity:.16 }));
+      svg.appendChild(el("line", { x1:X(S.cap), x2:X(S.cap), y1:T, y2:T+ph,
+        stroke:"#8A929A", "stroke-width":2, "stroke-dasharray":"5 4" }));
+      var cl = el("text", { x:X(S.cap)+7, y:T+15, "font-size":11.5, fill:"#5C646C",
+        "font-weight":"700", "font-family":"system-ui,sans-serif", "letter-spacing":".08em" });
+      cl.textContent = "CAPACITY";
+      svg.appendChild(cl);
+    }
+
+    // lines
+    svg.appendChild(el("line", { x1:X(0), x2:X(xMax), y1:Y(S.fc), y2:Y(S.fc),
+      stroke:"#B9BEC4", "stroke-width":2.5 }));
+    svg.appendChild(el("line", { x1:X(0), x2:X(xMax), y1:Y(cost(0)), y2:Y(cost(xMax)),
+      stroke:"#333F48", "stroke-width":3 }));
+    svg.appendChild(el("line", { x1:X(0), x2:X(xMax), y1:Y(rev(0)), y2:Y(rev(xMax)),
+      stroke:"#A32638", "stroke-width":3 }));
+
+    // axes
+    svg.appendChild(el("line", { x1:L, x2:L+pw, y1:T+ph, y2:T+ph, stroke:"#C9CDD2", "stroke-width":1.5 }));
+    svg.appendChild(el("line", { x1:L, x2:L, y1:T, y2:T+ph, stroke:"#C9CDD2", "stroke-width":1.5 }));
+    for (var j = 0; j <= 4; j++){
+      var u3 = xMax * j / 4;
+      var xt = el("text", { x:X(u3), y:T+ph+19, "text-anchor":"middle", "font-size":11.5,
+        fill:"#667085", "font-family":"system-ui,sans-serif" });
+      xt.textContent = Math.round(u3).toLocaleString("en-US");
+      svg.appendChild(xt);
+    }
+    var xa = el("text", { x:L+pw/2, y:H-9, "text-anchor":"middle", "font-size":12,
+      fill:"#667085", "font-family":"system-ui,sans-serif" });
+    xa.textContent = "Shirts sold";
+    svg.appendChild(xa);
+
+    // break-even marker
+    if (m.cm > 0 && isFinite(m.beU) && m.beU <= xMax){
+      var bx = X(m.beU), by = Y(rev(m.beU));
+      var beyond = m.beU > S.cap;
+      svg.appendChild(el("circle", { cx:bx, cy:by, r:6,
+        fill: beyond ? "#8A929A" : "#A32638" }));
+      var anchor = bx > L + pw*0.62 ? "end" : "start";
+      var lt = el("text", { x: bx + (anchor === "end" ? -12 : 12), y: by - 12,
+        "text-anchor":anchor, "font-size":12.5, "font-weight":"700",
+        fill: beyond ? "#5C646C" : "#A32638", "font-family":"system-ui,sans-serif" });
+      lt.textContent = "Break-even " + Math.ceil(m.beU).toLocaleString("en-US") + " shirts";
+      svg.appendChild(lt);
+    }
+  }
+
+  /* ---------- readouts ---------- */
+  function render(){
+    var m = model();
+    $("vPrice").textContent = money(S.price);
+    $("vVc").textContent    = money(S.vc);
+    $("vFc").textContent    = money(S.fc);
+    $("vCap").textContent   = S.cap.toLocaleString("en-US") + " shirts";
+
+    $("oCm").textContent  = money2(m.cm);
+    $("oCmr").textContent = m.cm > 0 ? (m.cmr*100).toFixed(1) + "%" : "—";
+    $("oBeU").textContent = m.cm > 0 ? Math.ceil(m.beU).toLocaleString("en-US") : "never";
+    $("oBeD").textContent = m.cm > 0 ? money(m.beD) : "never";
+    $("oOi").textContent  = money(m.oi);
+    $("oMos").textContent = (m.cm > 0 && m.reachable)
+      ? money((S.cap - m.beU) * S.price) + "  ·  " + ((1 - m.beU/S.cap)*100).toFixed(0) + "%" : "none";
+    $("oDol").textContent = (m.oi > 0) ? (S.cap * m.cm / m.oi).toFixed(2) : "—";
+
+    var v = $("verdict"), head = $("verdictHead"), why = $("verdictWhy");
+    v.classList.remove("ok","no");
+    if (m.cm <= 0){
+      v.classList.add("no");
+      head.textContent = "Every shirt loses money.";
+      why.textContent = "At " + money(S.price) + " a shirt against " + money(S.vc) +
+        " of variable cost, contribution margin is " + money2(m.cm) +
+        ". Selling more makes the loss bigger, so there is no break-even at any volume.";
+    } else if (!m.reachable){
+      v.classList.add("no");
+      head.textContent = "Break-even is out of reach.";
+      why.textContent = "It would take " + Math.ceil(m.beU).toLocaleString("en-US") +
+        " shirts to cover " + money(S.fc) + " of fixed costs at " + money2(m.cm) +
+        " each, and the store can only make " + S.cap.toLocaleString("en-US") +
+        ". Raise the price, cut a cost, or add capacity.";
+    } else {
+      v.classList.add("ok");
+      head.textContent = "Break-even at " + Math.ceil(m.beU).toLocaleString("en-US") +
+        " shirts — " + money(m.beD) + " of sales.";
+      why.textContent = "That is " + ((m.beU/S.cap)*100).toFixed(0) +
+        "% of capacity. Sell everything it can make and operating income is " +
+        money(m.oi) + ".";
+    }
+    draw();
+  }
+
+  /* ---------- wiring ---------- */
+  [["price","price"],["vc","vc"],["fc","fc"],["cap","cap"]].forEach(function(pair){
+    var input = $(pair[0]);
+    input.value = S[pair[1]];
+    input.addEventListener("input", function(){
+      S[pair[1]] = Number(input.value);
+      setPressed(null);
+      render();
+    });
+  });
+
+  function setPressed(which){
+    $("pToday").setAttribute("aria-pressed", which === "today" ? "true" : "false");
+    $("pAuto").setAttribute("aria-pressed",  which === "auto"  ? "true" : "false");
+    if (!which) $("presetNote").textContent = "";
+  }
+  function apply(o, which, note){
+    S.price = o.price; S.vc = o.vc; S.fc = o.fc; S.cap = o.cap;
+    $("price").value = S.price; $("vc").value = S.vc;
+    $("fc").value = S.fc; $("cap").value = S.cap;
+    setPressed(which);
+    $("presetNote").textContent = note;
+    render();
+  }
+  $("pToday").addEventListener("click", function(){
+    apply({price:40, vc:20, fc:5000, cap:500}, "today",
+      "How the bookstore runs now: $40 a shirt, $20 of variable cost, $5,000 of fixed costs.");
+  });
+  $("pAuto").addEventListener("click", function(){
+    apply({price:40, vc:10, fc:11000, cap:500}, "auto",
+      "Buy the printing machine: fixed costs go $5,000 → $11,000, variable cost goes $20 → $10 a shirt. Same price, same capacity.");
+  });
+
+  apply({price:40, vc:20, fc:5000, cap:500}, "today",
+    "How the bookstore runs now: $40 a shirt, $20 of variable cost, $5,000 of fixed costs.");
+})();
+</script>
+</body>
+</html>
