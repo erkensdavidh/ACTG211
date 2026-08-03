@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Savings-Account Question — ACTG 211</title>
+<style>
+  :root { --red: #A32638; --ink: #333F48; --light: #F5F6F7; --line: #E1E5E9; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; color: var(--ink); background: #fff; padding: 28px 40px; }
+  .kicker { color: var(--red); font-size: 14px; font-weight: bold; letter-spacing: 2.5px; text-transform: uppercase; }
+  h1 { font-family: Cambria, Georgia, serif; font-size: 34px; margin: 6px 0 2px; }
+  .rule { width: 84px; height: 4px; background: var(--red); margin: 10px 0 18px; }
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 28px; align-items: start; }
+  .panel { background: var(--light); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
+  label { display: block; font-weight: bold; font-size: 15px; margin: 14px 0 4px; }
+  label span { color: var(--red); font-size: 20px; }
+  input[type=range] { width: 100%; accent-color: var(--red); }
+  .target-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  input[type=number] { width: 130px; font-size: 16px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .answer { margin-top: 20px; background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--red); border-radius: 8px; padding: 14px 16px; }
+  .answer .lbl { font-size: 13px; font-weight: bold; letter-spacing: 1.5px; color: var(--red); text-transform: uppercase; }
+  .answer .big { font-family: Cambria, Georgia, serif; font-size: 40px; font-weight: bold; }
+  .answer .sub { font-size: 13.5px; color: #5A646D; margin-top: 3px; }
+  svg { width: 100%; height: auto; display: block; }
+  .foot { margin-top: 14px; font-size: 13.5px; color: #5A646D; max-width: 900px; }
+  .foot b { color: var(--red); }
+</style>
+</head>
+<body>
+  <div class="kicker">ACTG 211 &middot; Chapter 7 &middot; Discounting, in a bank account</div>
+  <h1>How Much Must Go in the Bank Today?</h1>
+  <div class="rule"></div>
+  <div class="grid">
+    <div class="panel">
+      <label>Target amount waiting for you</label>
+      <div class="target-row">$ <input type="number" id="target" value="300000" min="1000" step="10000"></div>
+      <label>Interest rate: <span id="rateLbl">10%</span></label>
+      <input type="range" id="rate" min="1" max="20" step="0.5" value="10">
+      <label>Years until you need it: <span id="yearsLbl">10</span></label>
+      <input type="range" id="years" min="1" max="30" step="1" value="10">
+      <div class="answer">
+        <div class="lbl">Deposit needed today</div>
+        <div class="big" id="deposit">$115,663</div>
+        <div class="sub" id="depositSub">That deposit IS the present value of $300,000 in 10 years at 10%.</div>
+      </div>
+    </div>
+    <div>
+      <svg id="chart" viewBox="0 0 640 420" role="img" aria-label="Deposit needed today by years, at the chosen rate"></svg>
+    </div>
+  </div>
+  <p class="foot"><b>Read it left to right:</b> the deposit goes in TODAY (left) and compounds up to the amount waiting (right).
+  Drag YEARS right and the starting deposit falls &mdash; distant dollars are cheap. Drag the RATE up and it falls again &mdash; a better bank does more of the work.
+  Deposit &divide; target = the discount factor in your Appendix 7B table.</p>
+<script>
+  const $ = id => document.getElementById(id);
+  const fmt = x => '$' + Math.round(x).toLocaleString('en-US');
+  function dep(target, r, n) { return target / Math.pow(1 + r, n); }
+  function draw() {
+    const target = Math.max(1000, +$('target').value || 300000);
+    const r = +$('rate').value / 100, n = +$('years').value;
+    $('rateLbl').textContent = (+$('rate').value) + '%';
+    $('yearsLbl').textContent = n;
+    const d = dep(target, r, n);
+    $('deposit').textContent = fmt(d);
+    $('depositSub').textContent = 'That deposit IS the present value of ' + fmt(target) + ' in ' + n + (n === 1 ? ' year' : ' years') + ' at ' + (+$('rate').value) + '%.';
+    // chart: the deposit GROWING in the bank — left endpoint = deposit today, right endpoint = the target at year n
+    const W = 640, H = 420, mL = 78, mB = 46, mT = 26, mR = 20;
+    const plotW = W - mL - mR, plotH = H - mT - mB;
+    const maxY = target * 1.06;
+    const xOf = yr => mL + (yr / n) * plotW;
+    const yOf = v => mT + (1 - v / maxY) * plotH;
+    let path = '';
+    const step = n / 120;
+    for (let yr = 0; yr <= n + 1e-9; yr += step) {
+      const bal = d * Math.pow(1 + r, yr);
+      path += (yr === 0 ? 'M' : 'L') + xOf(Math.min(yr, n)).toFixed(1) + ',' + yOf(bal).toFixed(1) + ' ';
+    }
+    let g = '';
+    for (let i = 0; i <= 4; i++) {
+      const v = target * i / 4, y = yOf(v);
+      g += `<line x1="${mL}" y1="${y}" x2="${W - mR}" y2="${y}" stroke="#E1E5E9" stroke-width="1"/>`;
+      g += `<text x="${mL - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#5A646D">${fmt(v)}</text>`;
+    }
+    const tick = n <= 8 ? 1 : n <= 16 ? 2 : 5;
+    for (let yr = 0; yr <= n; yr += tick) {
+      g += `<text x="${xOf(yr)}" y="${H - mB + 20}" text-anchor="middle" font-size="12" fill="#5A646D">${yr}</text>`;
+    }
+    g += `<text x="${mL + plotW / 2}" y="${H - 6}" text-anchor="middle" font-size="13" fill="#333F48" font-weight="bold">Years in the bank</text>`;
+    // dashed guide at the target level, then the growth curve
+    g += `<line x1="${mL}" y1="${yOf(target)}" x2="${W - mR}" y2="${yOf(target)}" stroke="#AAB2BA" stroke-width="1.5" stroke-dasharray="6 5"/>`;
+    g += `<path d="${path}" fill="none" stroke="#A32638" stroke-width="3.5"/>`;
+    // LEFT endpoint: the deposit today (the answer)
+    g += `<circle cx="${xOf(0)}" cy="${yOf(d)}" r="7" fill="#A32638"/>`;
+    g += `<text x="${xOf(0) + 12}" y="${Math.min(yOf(d) + 22, H - mB - 8)}" font-size="14" font-weight="bold" fill="#A32638">deposit today: ${fmt(d)}</text>`;
+    // RIGHT endpoint: the target, reached exactly at year n
+    g += `<circle cx="${xOf(n)}" cy="${yOf(target)}" r="7" fill="#333F48"/>`;
+    g += `<text x="${xOf(n) - 10}" y="${yOf(target) - 12}" text-anchor="end" font-size="14" font-weight="bold" fill="#333F48">${fmt(target)} waiting</text>`;
+    $('chart').innerHTML = g;
+  }
+  ['target', 'rate', 'years'].forEach(id => $(id).addEventListener('input', draw));
+  draw();
+</script>
+</body>
+</html>
