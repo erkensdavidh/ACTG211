@@ -3,103 +3,228 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Savings-Account Question — ACTG 211</title>
+<title>Present Value Simulator · ACTG 211</title>
 <style>
-  :root { --red: #A32638; --ink: #333F48; --light: #F5F6F7; --line: #E1E5E9; }
+  :root { --red: #A32638; --ink: #333F48; --light: #F5F6F7; --line: #E1E5E9; --muted: #5A646D; --ghost: #D3D8DD; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; color: var(--ink); background: #fff; padding: 28px 40px; }
   .kicker { color: var(--red); font-size: 14px; font-weight: bold; letter-spacing: 2.5px; text-transform: uppercase; }
-  h1 { font-family: Cambria, Georgia, serif; font-size: 34px; margin: 6px 0 2px; }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 4px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 15px; font-weight: bold; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--red);
+         background: #fff; color: var(--red); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--red); color: #fff; }
+  .tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  h1 { font-family: Cambria, Georgia, serif; font-size: 34px; margin: 10px 0 2px; }
   .rule { width: 84px; height: 4px; background: var(--red); margin: 10px 0 18px; }
   .grid { display: grid; grid-template-columns: 340px 1fr; gap: 28px; align-items: start; }
   .panel { background: var(--light); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
   label { display: block; font-weight: bold; font-size: 15px; margin: 14px 0 4px; }
   label span { color: var(--red); font-size: 20px; }
   input[type=range] { width: 100%; accent-color: var(--red); }
-  .target-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-  input[type=number] { width: 130px; font-size: 16px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .money-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  input[type=number] { width: 140px; font-size: 16px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; }
   .answer { margin-top: 20px; background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--red); border-radius: 8px; padding: 14px 16px; }
   .answer .lbl { font-size: 13px; font-weight: bold; letter-spacing: 1.5px; color: var(--red); text-transform: uppercase; }
   .answer .big { font-family: Cambria, Georgia, serif; font-size: 40px; font-weight: bold; }
-  .answer .sub { font-size: 13.5px; color: #5A646D; margin-top: 3px; }
+  .answer .sub { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .factor { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+  .factor b { color: var(--ink); }
   svg { width: 100%; height: auto; display: block; }
-  .foot { margin-top: 14px; font-size: 13.5px; color: #5A646D; max-width: 900px; }
+  .foot { margin-top: 14px; font-size: 13.5px; color: var(--muted); max-width: 900px; }
   .foot b { color: var(--red); }
+  [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    body { padding: 18px 16px; }
+    h1 { font-size: 26px; }
+    .grid { grid-template-columns: 1fr; gap: 18px; }
+    .answer .big { font-size: 34px; }
+  }
 </style>
 </head>
 <body>
   <div class="kicker">ACTG 211 &middot; Chapter 7 &middot; Discounting, in a bank account</div>
-  <h1>How Much Must Go in the Bank Today?</h1>
-  <div class="rule"></div>
-  <div class="grid">
-    <div class="panel">
-      <label>Target amount waiting for you</label>
-      <div class="target-row">$ <input type="number" id="target" value="300000" min="1000" step="10000"></div>
-      <label>Interest rate: <span id="rateLbl">10%</span></label>
-      <input type="range" id="rate" min="1" max="20" step="0.5" value="10">
-      <label>Years until you need it: <span id="yearsLbl">10</span></label>
-      <input type="range" id="years" min="1" max="30" step="1" value="10">
-      <div class="answer">
-        <div class="lbl">Deposit needed today</div>
-        <div class="big" id="deposit">$115,663</div>
-        <div class="sub" id="depositSub">That deposit IS the present value of $300,000 in 10 years at 10%.</div>
+  <div class="tabs" role="tablist" aria-label="Type of cash flow">
+    <button class="tab" role="tab" id="tab-lump" aria-controls="view-lump" aria-selected="true">One payment (lump sum)</button>
+    <button class="tab" role="tab" id="tab-annuity" aria-controls="view-annuity" aria-selected="false">Equal yearly payments (annuity)</button>
+  </div>
+
+  <!-- ===================== LUMP SUM ===================== -->
+  <section id="view-lump" role="tabpanel" aria-labelledby="tab-lump">
+    <h1>How Much Must Go in the Bank Today?</h1>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="panel">
+        <label for="l-target">Target amount waiting for you</label>
+        <div class="money-row">$ <input type="number" id="l-target" value="300000" min="1000" step="10000"></div>
+        <label for="l-rate">Interest rate: <span id="l-rateLbl">10%</span></label>
+        <input type="range" id="l-rate" min="1" max="20" step="0.5" value="10">
+        <label for="l-years">Years until you need it: <span id="l-yearsLbl">10</span></label>
+        <input type="range" id="l-years" min="1" max="30" step="1" value="10">
+        <div class="answer">
+          <div class="lbl">Deposit needed today</div>
+          <div class="big" id="l-deposit">$115,663</div>
+          <div class="sub" id="l-sub"></div>
+          <div class="factor" id="l-factor"></div>
+        </div>
+      </div>
+      <div>
+        <svg id="l-chart" viewBox="0 0 640 420" role="img" aria-label="The deposit compounding up to the target amount"></svg>
       </div>
     </div>
-    <div>
-      <svg id="chart" viewBox="0 0 640 420" role="img" aria-label="Deposit needed today by years, at the chosen rate"></svg>
+    <p class="foot"><b>Read it left to right:</b> the deposit goes in today (left) and compounds up to the amount waiting (right).
+    Drag years right and the deposit falls: distant dollars are cheap. Drag the rate up and it falls again: a better bank does more of the work.
+    Deposit &divide; target = the factor in Exhibit 7B-1 (Present Value of $1).</p>
+  </section>
+
+  <!-- ===================== ANNUITY ===================== -->
+  <section id="view-annuity" role="tabpanel" aria-labelledby="tab-annuity" hidden>
+    <h1>How Much Must Go in the Bank to Pay You Every Year?</h1>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="panel">
+        <label for="a-pmt">Amount you withdraw at the end of each year</label>
+        <div class="money-row">$ <input type="number" id="a-pmt" value="15000" min="100" step="1000"></div>
+        <label for="a-rate">Interest rate: <span id="a-rateLbl">12%</span></label>
+        <input type="range" id="a-rate" min="1" max="20" step="0.5" value="12">
+        <label for="a-years">Number of yearly payments: <span id="a-yearsLbl">5</span></label>
+        <input type="range" id="a-years" min="1" max="30" step="1" value="5">
+        <div class="answer">
+          <div class="lbl">Deposit needed today</div>
+          <div class="big" id="a-deposit">$54,072</div>
+          <div class="sub" id="a-sub"></div>
+          <div class="factor" id="a-factor"></div>
+        </div>
+      </div>
+      <div>
+        <svg id="a-chart" viewBox="0 0 640 420" role="img" aria-label="Each yearly payment and its present value today"></svg>
+      </div>
     </div>
-  </div>
-  <p class="foot"><b>Read it left to right:</b> the deposit goes in TODAY (left) and compounds up to the amount waiting (right).
-  Drag YEARS right and the starting deposit falls &mdash; distant dollars are cheap. Drag the RATE up and it falls again &mdash; a better bank does more of the work.
-  Deposit &divide; target = the discount factor in your Appendix 7B table.</p>
+    <p class="foot"><b>The long way, one payment at a time:</b> each red bar is one year's payment discounted back to today with its Exhibit 7B-1 factor.
+    Add up the red bars and you get the deposit. Exhibit 7B-2 (Present Value of an Annuity of $1) does that addition for you: deposit &divide; payment = the annuity factor.
+    Drag years right and each new payment adds a smaller red bar, so the deposit keeps growing but more and more slowly. Drag the rate up and every bar shrinks.
+    Payments arrive at the end of each year, the same timing the table assumes.</p>
+  </section>
+
 <script>
   const $ = id => document.getElementById(id);
   const fmt = x => '$' + Math.round(x).toLocaleString('en-US');
-  function dep(target, r, n) { return target / Math.pow(1 + r, n); }
-  function draw() {
-    const target = Math.max(1000, +$('target').value || 300000);
-    const r = +$('rate').value / 100, n = +$('years').value;
-    $('rateLbl').textContent = (+$('rate').value) + '%';
-    $('yearsLbl').textContent = n;
-    const d = dep(target, r, n);
-    $('deposit').textContent = fmt(d);
-    $('depositSub').textContent = 'That deposit IS the present value of ' + fmt(target) + ' in ' + n + (n === 1 ? ' year' : ' years') + ' at ' + (+$('rate').value) + '%.';
-    // chart: the deposit GROWING in the bank — left endpoint = deposit today, right endpoint = the target at year n
+  const pct = v => (+v) + '%';
+  const yrs = n => n + (n === 1 ? ' year' : ' years');
+  const pv1 = (r, n) => 1 / Math.pow(1 + r, n);                       // Exhibit 7B-1 factor
+  const pvA = (r, n) => { let s = 0; for (let t = 1; t <= n; t++) s += pv1(r, t); return s; }; // Exhibit 7B-2 factor
+  const svgText = (x, y, s, o = {}) =>
+    `<text x="${x}" y="${y}" text-anchor="${o.anchor || 'start'}" font-size="${o.size || 12}" fill="${o.fill || '#5A646D'}"${o.bold ? ' font-weight="bold"' : ''}>${s}</text>`;
+  // y-axis grid helper: four bands up to `top`
+  function yGrid(top, mL, W, mR, yOf) {
+    let g = '';
+    for (let i = 0; i <= 4; i++) {
+      const v = top * i / 4, y = yOf(v);
+      g += `<line x1="${mL}" y1="${y}" x2="${W - mR}" y2="${y}" stroke="#E1E5E9" stroke-width="1"/>`;
+      g += svgText(mL - 8, y + 4, fmt(v), { anchor: 'end' });
+    }
+    return g;
+  }
+
+  /* ---------- lump sum ---------- */
+  function drawLump() {
+    const target = Math.max(1000, +$('l-target').value || 300000);
+    const rv = $('l-rate').value, r = rv / 100, n = +$('l-years').value;
+    $('l-rateLbl').textContent = pct(rv);
+    $('l-yearsLbl').textContent = n;
+    const f = pv1(r, n), d = target * f, fT = +f.toFixed(3);
+    $('l-deposit').textContent = fmt(d);
+    $('l-sub').textContent = 'That deposit is the present value of ' + fmt(target) + ' in ' + yrs(n) + ' at ' + pct(rv) + '.';
+    $('l-factor').innerHTML = 'Exhibit 7B-1 factor (' + n + ' periods, ' + pct(rv) + '): <b>' + fT.toFixed(3) + '</b><br>' +
+      'Table route: ' + fmt(target) + ' &times; ' + fT.toFixed(3) + ' = <b>' + fmt(target * fT) + '</b>' +
+      (Math.round(target * fT) !== Math.round(d) ? ' (the table rounds the factor to three decimals, so this lands a little off the exact deposit)' : '');
+
     const W = 640, H = 420, mL = 78, mB = 46, mT = 26, mR = 20;
-    const plotW = W - mL - mR, plotH = H - mT - mB;
-    const maxY = target * 1.06;
-    const xOf = yr => mL + (yr / n) * plotW;
+    const plotW = W - mL - mR, plotH = H - mT - mB, maxY = target * 1.06;
+    const xOf = t => mL + (t / n) * plotW;
     const yOf = v => mT + (1 - v / maxY) * plotH;
     let path = '';
     const step = n / 120;
-    for (let yr = 0; yr <= n + 1e-9; yr += step) {
-      const bal = d * Math.pow(1 + r, yr);
-      path += (yr === 0 ? 'M' : 'L') + xOf(Math.min(yr, n)).toFixed(1) + ',' + yOf(bal).toFixed(1) + ' ';
+    for (let t = 0; t <= n + 1e-9; t += step) {
+      path += (t === 0 ? 'M' : 'L') + xOf(Math.min(t, n)).toFixed(1) + ',' + yOf(d * Math.pow(1 + r, t)).toFixed(1) + ' ';
     }
-    let g = '';
-    for (let i = 0; i <= 4; i++) {
-      const v = target * i / 4, y = yOf(v);
-      g += `<line x1="${mL}" y1="${y}" x2="${W - mR}" y2="${y}" stroke="#E1E5E9" stroke-width="1"/>`;
-      g += `<text x="${mL - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#5A646D">${fmt(v)}</text>`;
-    }
+    let g = yGrid(target, mL, W, mR, yOf);
     const tick = n <= 8 ? 1 : n <= 16 ? 2 : 5;
-    for (let yr = 0; yr <= n; yr += tick) {
-      g += `<text x="${xOf(yr)}" y="${H - mB + 20}" text-anchor="middle" font-size="12" fill="#5A646D">${yr}</text>`;
-    }
-    g += `<text x="${mL + plotW / 2}" y="${H - 6}" text-anchor="middle" font-size="13" fill="#333F48" font-weight="bold">Years in the bank</text>`;
-    // dashed guide at the target level, then the growth curve
+    for (let t = 0; t <= n; t += tick) g += svgText(xOf(t), H - mB + 20, t, { anchor: 'middle' });
+    g += svgText(mL + plotW / 2, H - 6, 'Years in the bank', { anchor: 'middle', size: 13, fill: '#333F48', bold: true });
     g += `<line x1="${mL}" y1="${yOf(target)}" x2="${W - mR}" y2="${yOf(target)}" stroke="#AAB2BA" stroke-width="1.5" stroke-dasharray="6 5"/>`;
     g += `<path d="${path}" fill="none" stroke="#A32638" stroke-width="3.5"/>`;
-    // LEFT endpoint: the deposit today (the answer)
     g += `<circle cx="${xOf(0)}" cy="${yOf(d)}" r="7" fill="#A32638"/>`;
-    g += `<text x="${xOf(0) + 12}" y="${Math.min(yOf(d) + 22, H - mB - 8)}" font-size="14" font-weight="bold" fill="#A32638">deposit today: ${fmt(d)}</text>`;
-    // RIGHT endpoint: the target, reached exactly at year n
+    g += svgText(xOf(0) + 12, Math.min(yOf(d) + 22, H - mB - 8), 'deposit today: ' + fmt(d), { size: 14, fill: '#A32638', bold: true });
     g += `<circle cx="${xOf(n)}" cy="${yOf(target)}" r="7" fill="#333F48"/>`;
-    g += `<text x="${xOf(n) - 10}" y="${yOf(target) - 12}" text-anchor="end" font-size="14" font-weight="bold" fill="#333F48">${fmt(target)} waiting</text>`;
-    $('chart').innerHTML = g;
+    g += svgText(xOf(n) - 10, yOf(target) - 12, fmt(target) + ' waiting', { anchor: 'end', size: 14, fill: '#333F48', bold: true });
+    $('l-chart').innerHTML = g;
   }
-  ['target', 'rate', 'years'].forEach(id => $(id).addEventListener('input', draw));
-  draw();
+
+  /* ---------- annuity ---------- */
+  function drawAnnuity() {
+    const pmt = Math.max(100, +$('a-pmt').value || 15000);
+    const rv = $('a-rate').value, r = rv / 100, n = +$('a-years').value;
+    $('a-rateLbl').textContent = pct(rv);
+    $('a-yearsLbl').textContent = n;
+    const f = pvA(r, n), d = pmt * f, fT = +f.toFixed(3);
+    $('a-deposit').textContent = fmt(d);
+    $('a-sub').textContent = 'That deposit is the present value of ' + fmt(pmt) + ' a year for ' + yrs(n) + ' at ' + pct(rv) + '. It pays out ' +
+      fmt(pmt * n) + ' in total; interest covers the other ' + fmt(pmt * n - d) + '.';
+    // long-way factor string: show every term up to 5 payments, otherwise first three and the last
+    const terms = [];
+    for (let t = 1; t <= n; t++) terms.push(pv1(r, t).toFixed(3));
+    const longWay = n <= 5 ? terms.join(' + ') : terms.slice(0, 3).join(' + ') + ' + &hellip; + ' + terms[n - 1];
+    $('a-factor').innerHTML = 'Exhibit 7B-2 factor (' + n + ' periods, ' + pct(rv) + '): <b>' + fT.toFixed(3) + '</b>' +
+      (n > 1 ? '<br>The long way: ' + longWay + ' &asymp; ' + fT.toFixed(3) : '') +
+      '<br>Table route: ' + fmt(pmt) + ' &times; ' + fT.toFixed(3) + ' = <b>' + fmt(pmt * fT) + '</b>' +
+      (Math.round(pmt * fT) !== Math.round(d) ? ' (the table rounds the factor to three decimals, so this lands a little off the exact deposit)' : '');
+
+    const W = 640, H = 420, mL = 78, mB = 46, mT = 40, mR = 20;
+    const plotW = W - mL - mR, plotH = H - mT - mB, maxY = pmt * 1.08;
+    const slot = plotW / n, bw = Math.min(46, slot * 0.7);
+    const xC = t => mL + slot * (t - 0.5);
+    const yOf = v => mT + (1 - v / maxY) * plotH;
+    let g = yGrid(pmt, mL, W, mR, yOf);
+    // legend
+    g += `<rect x="${mL}" y="8" width="14" height="14" fill="none" stroke="#AAB2BA" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    g += svgText(mL + 20, 20, 'payment received that year', { size: 13 });
+    g += `<rect x="${mL + 210}" y="8" width="14" height="14" fill="#A32638"/>`;
+    g += svgText(mL + 230, 20, 'what it is worth today', { size: 13 });
+    for (let t = 1; t <= n; t++) {
+      const v = pmt * pv1(r, t), x = xC(t) - bw / 2;
+      g += `<rect x="${x.toFixed(1)}" y="${yOf(pmt).toFixed(1)}" width="${bw.toFixed(1)}" height="${(yOf(0) - yOf(pmt)).toFixed(1)}" fill="none" stroke="#AAB2BA" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      g += `<rect x="${x.toFixed(1)}" y="${yOf(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(yOf(0) - yOf(v)).toFixed(1)}" fill="#A32638"><title>Year ${t}: ${fmt(pmt)} &times; ${pv1(r, t).toFixed(3)} = ${fmt(v)} today</title></rect>`;
+    }
+    const tick = n <= 12 ? 1 : n <= 20 ? 2 : 5;
+    for (let t = 1; t <= n; t++) if (t === 1 || t % tick === 0) g += svgText(xC(t), H - mB + 20, t, { anchor: 'middle' });
+    g += svgText(mL + plotW / 2, H - 6, 'Year the payment arrives', { anchor: 'middle', size: 13, fill: '#333F48', bold: true });
+    // label the first and (if different) the last red bar with today's value
+    const lab = (t, anchor) => {
+      const v = pmt * pv1(r, t);
+      return svgText(anchor === 'start' ? xC(t) - bw / 2 : xC(t) + bw / 2, Math.max(yOf(v) - 8, mT + 14), fmt(v), { anchor, size: 13, fill: '#A32638', bold: true });
+    };
+    if (n <= 12) {
+      g += lab(1, 'start');
+      if (n > 1) g += lab(n, 'end');
+    }
+    $('a-chart').innerHTML = g;
+  }
+
+  /* ---------- tabs (URL hash #lump or #annuity selects the tab, so a QR can deep-link) ---------- */
+  function show(which) {
+    ['lump', 'annuity'].forEach(k => {
+      const on = k === which;
+      $('tab-' + k).setAttribute('aria-selected', on);
+      $('view-' + k).hidden = !on;
+    });
+    try { history.replaceState(null, '', '#' + which); } catch (e) {}
+  }
+  $('tab-lump').addEventListener('click', () => show('lump'));
+  $('tab-annuity').addEventListener('click', () => show('annuity'));
+  ['l-target', 'l-rate', 'l-years'].forEach(id => $(id).addEventListener('input', drawLump));
+  ['a-pmt', 'a-rate', 'a-years'].forEach(id => $(id).addEventListener('input', drawAnnuity));
+  drawLump(); drawAnnuity();
+  show(location.hash === '#annuity' ? 'annuity' : 'lump');
 </script>
 </body>
 </html>
