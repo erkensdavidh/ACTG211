@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Cash Crunch &middot; ACTG 211</title>
+<style>
+  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 16px 40px; background:#fff; color:var(--slate); font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; }
+  .wrap { max-width:1060px; margin:0 auto; }
+  .kicker { color:var(--crim); font-weight:bold; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  h1 { font-family:Cambria, Georgia, serif; font-size:28px; margin:4px 0 6px; }
+  .rule { width:110px; height:3px; background:var(--crim); margin-bottom:10px; }
+  .tagline { color:var(--mid); font-size:15px; margin-bottom:14px; }
+  .panel { background:var(--bg); border:1px solid var(--pale); border-radius:8px; padding:14px; margin-bottom:14px; }
+  .levers { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px 22px; }
+  .lever label { display:block; font-weight:bold; font-size:14px; }
+  .lever .val { color:var(--crim); font-weight:bold; }
+  .lever .hint { color:var(--gray); font-size:12.5px; }
+  input[type=range] { width:100%; accent-color:var(--crim); margin:6px 0 2px; }
+  .seg { display:flex; gap:6px; margin-top:6px; }
+  .seg button, .reset { flex:1; border:1px solid var(--line); background:#fff; color:var(--slate); border-radius:6px; padding:7px 6px; font:inherit; font-size:13px; cursor:pointer; }
+  .seg button.on { background:var(--slate); color:#fff; border-color:var(--slate); }
+  .reset { flex:none; margin-top:10px; padding:7px 12px; }
+  .glance { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+  .glance > div { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; }
+  .glance .lbl { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
+  .glance .num { font-size:20px; font-weight:bold; }
+  .glance .num.chg, td.chg { color:var(--crim); }
+  td.chg { background:var(--tint); font-weight:bold; }
+  h2 { font-family:Cambria, Georgia, serif; font-size:18px; margin:18px 0 6px; }
+  .note { color:var(--gray); font-size:13px; margin:0 0 6px; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { border-collapse:collapse; width:100%; min-width:560px; background:#fff; font-size:14px; }
+  th { background:var(--crim); color:#fff; font-weight:bold; padding:6px 8px; text-align:right; }
+  th:first-child { text-align:left; }
+  td { padding:5px 8px; border-bottom:1px solid var(--pale); text-align:right; white-space:nowrap; }
+  td:first-child { text-align:left; white-space:normal; color:var(--slate); }
+  tr.total td { font-weight:bold; border-top:2px solid var(--line); }
+  tr.sub td:first-child { padding-left:18px; color:var(--gray); }
+  #chart { max-width:600px; }
+  svg { width:100%; height:auto; display:block; background:#fff; border:1px solid var(--pale); border-radius:6px; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px; color:var(--mid); margin-top:6px; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:-1px; margin-right:5px; }
+  details { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; margin-bottom:8px; }
+  summary { cursor:pointer; font-weight:bold; }
+  details p { margin:8px 0 2px; color:var(--mid); }
+  .assume { color:var(--gray); font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker">Hampton Freeze &middot; Chapter 8</div>
+<h1>The Cash Crunch</h1>
+<div class="rule"></div>
+<div class="tagline">Today&rsquo;s master budget, live. Move a lever and follow it down the chain into cash while budgeted income stays put. Every number your change moves turns <b style="color:#A32638">crimson</b>.</div>
+
+<div class="panel">
+  <div class="levers">
+    <div class="lever"><label for="c">Collected in the quarter of sale: <span class="val" id="cv"></span></label>
+      <input type="range" id="c" min="30" max="100" step="5"><div class="hint">The rest is collected next quarter. Lecture: 70%.</div></div>
+    <div class="lever"><label for="pay">Paid in the quarter of purchase: <span class="val" id="payv"></span></label>
+      <input type="range" id="pay" min="0" max="100" step="5"><div class="hint">The rest is paid next quarter. Lecture: 50%.</div></div>
+    <div class="lever"><label for="fg">Ending inventory policy: <span class="val" id="fgv"></span></label>
+      <input type="range" id="fg" min="0" max="50" step="5"><div class="hint">Cases on hand at quarter-end, as a % of next quarter&rsquo;s sales. Lecture: 20%.</div></div>
+    <div class="lever"><label>Sales pattern (100,000 cases a year either way)</label>
+      <div class="seg"><button type="button" data-pattern="seasonal">Seasonal: 10k / 30k / 40k / 20k</button><button type="button" data-pattern="even">Flattened: 25k each</button></div></div>
+  </div>
+  <button type="button" class="reset" id="reset">Back to the lecture numbers</button>
+</div>
+
+<div class="panel glance" id="glance"></div>
+
+<h2>Income versus cash, quarter by quarter</h2>
+<p class="note">Operating income comes from the budgeted income statement. Net cash flow is the quarter&rsquo;s cash collected minus everything paid out, before any borrowing. The gap between the two is the chapter: collections and payments lag, inventory is paid for as it is made but expensed when it sells, depreciation is an expense but never a check, and the equipment is a check but not an expense.</p>
+<div id="chart"></div>
+<div class="legend"><span><i style="background:#333F48"></i>Operating income</span><span><i style="background:#9AA3AD"></i>Net cash flow before financing</span><span><i style="background:#A32638"></i>Negative: more cash out than in</span></div>
+
+<h2>1 &middot; Sales and cash collections</h2>
+<div class="scroll" id="t1"></div>
+<h2>2 &middot; Production (cases)</h2>
+<div class="scroll" id="t2"></div>
+<h2>3 &middot; Direct materials and cash payments</h2>
+<div class="scroll" id="t3"></div>
+<h2>8 &middot; The cash budget</h2>
+<div class="scroll" id="t8"></div>
+
+<h2>Predict first, then drag</h2>
+<details><summary>Collect 85% in the quarter of sale. Does cash move, income, or both?</summary><p id="r1"></p></details>
+<details><summary>Pay suppliers 100% in the quarter of purchase. What happens to Q1 borrowing?</summary><p id="r2"></p></details>
+<details><summary>Raise the ending inventory policy from 20% to 40%. Does Q1 borrowing go up or down?</summary><p id="r3"></p></details>
+<details><summary>Flatten the season (same 100,000 cases a year). Does Hampton still need to borrow in Q1?</summary><p id="r4"></p></details>
+
+<h2>What the model assumes</h2>
+<p class="assume">Q1 matches the lecture exactly. Each case sells for $20 and needs 15 lbs of sugar at $0.20 a lb; ending raw materials are 10% of next quarter&rsquo;s needs. Direct labor is 0.40 hours a case at $15 an hour. Overhead is $4.00 per labor hour plus $60,600 a quarter, of which $15,000 is depreciation. Selling and administrative costs are $1.80 a case plus $30,000 a quarter, of which $4,000 is depreciation. Depreciation is never a cash payment, so it stays out of the cash budget. The only equipment purchase is Q1&rsquo;s $50,000; there are no dividends or taxes. Hampton starts the year with $40,000 of cash, $90,000 of receivables (all collected in Q1), $25,800 of payables (all paid in Q1), 2,000 cases and 21,000 lbs on hand. It keeps at least $30,000 of cash, borrows in $10,000 steps at the start of a quarter, and repays in $10,000 steps at the end of a quarter when cash allows, paying 1% a month interest on whatever it repays. Next year&rsquo;s first quarter sells and produces 15,000 cases (25,000 when the season is flattened). Operating income is before interest; each case sold carries the budgeted $13.00 product cost, however many cases are made.</p>
+</div>
+
+<script>
+/*MODEL-START*/
+function model(p) {
+  var seasonal = p.pattern !== 'even';
+  var units = seasonal ? [10000, 30000, 40000, 20000] : [25000, 25000, 25000, 25000];
+  var nextQ1 = seasonal ? 15000 : 25000;
+  var c = p.collectNow / 100, pay = p.payNow / 100, fg = p.fgPolicy / 100;
+  var r = function (x) { return Math.round(x * 100) / 100; };
+  var sales = units.map(function (u) { return u * 20; });
+  var collNow = sales.map(function (s) { return r(s * c); });
+  var collPrior = sales.map(function (s, i) { return i === 0 ? 90000 : r(sales[i - 1] - collNow[i - 1]); });
+  var collections = sales.map(function (s, i) { return r(collNow[i] + collPrior[i]); });
+  var endFG = units.map(function (u, i) { return Math.round((i < 3 ? units[i + 1] : nextQ1) * fg); });
+  var begFG = [2000, endFG[0], endFG[1], endFG[2]];
+  var production = units.map(function (u, i) { return u + endFG[i] - begFG[i]; });
+  var needs = production.map(function (x) { return x * 15; });
+  var endRM = needs.map(function (n, i) { return Math.round((i < 3 ? needs[i + 1] : nextQ1 * 15) * 0.10); });
+  var begRM = [21000, endRM[0], endRM[1], endRM[2]];
+  var buyLbs = needs.map(function (n, i) { return n + endRM[i] - begRM[i]; });
+  var purch = buyLbs.map(function (x) { return r(x * 0.20); });
+  var paidNow = purch.map(function (x) { return r(x * pay); });
+  var paidPrior = purch.map(function (x, i) { return i === 0 ? 25800 : r(purch[i - 1] - paidNow[i - 1]); });
+  var paid = purch.map(function (x, i) { return r(paidNow[i] + paidPrior[i]); });
+  var labor = production.map(function (x) { return x * 0.40 * 15; });
+  var overhead = production.map(function (x) { return r(x * 0.40 * 4 + 60600 - 15000); });
+  var selling = units.map(function (u) { return r(u * 1.80 + 30000 - 4000); });
+  var equipment = [50000, 0, 0, 0];
+  var income = units.map(function (u) { return r(u * (20 - 13) - (u * 1.80 + 30000)); });
+  var cash = 40000, loans = [], q = [];
+  for (var i = 0; i < 4; i++) {
+    var out = r(paid[i] + labor[i] + overhead[i] + selling[i] + equipment[i]);
+    var pre = r(cash + collections[i] - out);
+    var borrow = 0, repay = 0, interest = 0;
+    if (pre < 30000) {
+      borrow = Math.ceil((30000 - pre) / 10000) * 10000;
+      loans.push({ amt: borrow, q: i });
+    } else {
+      var avail = pre;
+      for (var k = 0; k < loans.length; k++) {
+        var L = loans[k];
+        while (L.amt > 0) {
+          var chunk = Math.min(10000, L.amt), months = (i - L.q + 1) * 3, cost = chunk + chunk * 0.01 * months;
+          if (avail - cost < 30000) break;
+          avail -= cost; repay += chunk; interest += chunk * 0.01 * months; L.amt -= chunk;
+        }
+        if (L.amt > 0) break;
+      }
+    }
+    var end = r(pre + borrow - repay - interest);
+    var loanBal = loans.reduce(function (a, L) { return a + L.amt; }, 0);
+    q.push({ beg: cash, out: out, pre: pre, borrow: borrow, repay: repay, interest: r(interest), end: end, loan: loanBal });
+    cash = end;
+  }
+  return { units: units, sales: sales, collNow: collNow, collPrior: collPrior, collections: collections, endFG: endFG, begFG: begFG,
+           production: production, needs: needs, endRM: endRM, begRM: begRM, buyLbs: buyLbs, purch: purch, paidNow: paidNow,
+           paidPrior: paidPrior, paid: paid, labor: labor, overhead: overhead, selling: selling, equipment: equipment, income: income, q: q,
+           yearEndAR: r(sales[3] - collNow[3]), yearEndAP: r(purch[3] - paidNow[3]) };
+}
+/*MODEL-END*/
+
+var DEFAULTS = { collectNow: 70, payNow: 50, fgPolicy: 20, pattern: 'seasonal' };
+var p = { collectNow: 70, payNow: 50, fgPolicy: 20, pattern: 'seasonal' };
+var BASE = model(DEFAULTS);
+function el(id) { return document.getElementById(id); }
+function money(v) { var x = Math.round(v); return x < 0 ? '$(' + Math.abs(x).toLocaleString('en-US') + ')' : '$' + x.toLocaleString('en-US'); }
+function count(v) { return Math.round(v).toLocaleString('en-US'); }
+function pick(m, key) { return key.split('.').reduce(function (o, k) { return o[k]; }, m); }
+function col(m, key, i) { var parts = key.split('@'); return parts.length > 1 ? m.q[i][parts[1]] : pick(m, key)[i]; }
+function yearOf(m, key, mode) {
+  var v = [0, 1, 2, 3].map(function (i) { return col(m, key, i); });
+  if (mode === 'sum') return v.reduce(function (a, b) { return a + b; }, 0);
+  if (mode === 'first') return v[0];
+  if (mode === 'last') return v[3];
+  return null;
+}
+function table(m, rows) {
+  var h = '<table><tr><th></th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Year</th></tr>';
+  rows.forEach(function (row) {
+    var label = row[0], key = row[1], mode = row[2], f = row[3] === 'n' ? count : money, cls = row[4] || '';
+    h += '<tr class="' + cls + '"><td>' + label + '</td>';
+    for (var i = 0; i < 4; i++) {
+      var v = col(m, key, i), b = col(BASE, key, i);
+      h += '<td class="' + (Math.abs(v - b) > 0.5 ? 'chg' : '') + '">' + f(v) + '</td>';
+    }
+    var y = yearOf(m, key, mode), yb = yearOf(BASE, key, mode);
+    h += '<td class="' + (y !== null && Math.abs(y - yb) > 0.5 ? 'chg' : '') + '">' + (y === null ? '' : f(y)) + '</td></tr>';
+  });
+  return h + '</table>';
+}
+function netFlow(m) { return [0, 1, 2, 3].map(function (i) { return m.collections[i] - m.q[i].out; }); }
+function chart(m) {
+  var W = 480, H = 250, left = 86, right = 8, top = 12, bottom = 30;
+  var flow = netFlow(m), vals = m.income.concat(flow);
+  var hi = Math.max(0, Math.max.apply(null, vals)), lo = Math.min(0, Math.min.apply(null, vals));
+  var span = hi - lo || 1, y = function (v) { return top + (hi - v) / span * (H - top - bottom); };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Operating income and net cash flow before financing, by quarter">';
+  var ticks = [0, hi];
+  if (lo < 0 && y(lo) - y(0) >= 14) ticks.unshift(lo);
+  ticks.forEach(function (t) { s += '<text x="' + (left - 6) + '" y="' + (y(t) + 4) + '" font-size="14" text-anchor="end" fill="#667085">' + money(t) + '</text>'; });
+  s += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="#9AA3AD" stroke-width="1"/>';
+  var gw = (W - left - right) / 4, bw = Math.min(30, gw * 0.3);
+  for (var j = 0; j < 4; j++) {
+    var x0 = left + j * gw + gw / 2, inc = m.income[j], cf = flow[j];
+    s += '<rect x="' + (x0 - bw - 2) + '" y="' + Math.min(y(inc), y(0)) + '" width="' + bw + '" height="' + Math.max(0.5, Math.abs(y(inc) - y(0))) + '" fill="#333F48"><title>Q' + (j + 1) + ' operating income ' + money(inc) + '</title></rect>';
+    s += '<rect x="' + (x0 + 2) + '" y="' + Math.min(y(cf), y(0)) + '" width="' + bw + '" height="' + Math.max(0.5, Math.abs(y(cf) - y(0))) + '" fill="' + (cf < 0 ? '#A32638' : '#9AA3AD') + '"><title>Q' + (j + 1) + ' net cash flow ' + money(cf) + '</title></rect>';
+    s += '<text x="' + x0 + '" y="' + (H - 9) + '" font-size="15" text-anchor="middle" fill="#333F48" font-weight="bold">Q' + (j + 1) + '</text>';
+  }
+  return s + '</svg>';
+}
+function glance(m) {
+  var inc = m.income.reduce(function (a, b) { return a + b; }, 0), binc = BASE.income.reduce(function (a, b) { return a + b; }, 0);
+  var peak = Math.max.apply(null, m.q.map(function (x) { return x.loan; })), bpeak = Math.max.apply(null, BASE.q.map(function (x) { return x.loan; }));
+  var intr = m.q.reduce(function (a, x) { return a + x.interest; }, 0), bintr = BASE.q.reduce(function (a, x) { return a + x.interest; }, 0);
+  var q1b = m.q[0].borrow, bq1b = BASE.q[0].borrow;
+  var cell = function (lbl, v, b) { return '<div><div class="lbl">' + lbl + '</div><div class="num' + (Math.abs(v - b) > 0.5 ? ' chg' : '') + '">' + money(v) + '</div></div>'; };
+  return cell('Operating income, year', inc, binc) + cell('Borrowed in Q1', q1b, bq1b) + cell('Largest loan balance', peak, bpeak) + cell('Interest paid, year', intr, bintr);
+}
+function render() {
+  var m = model(p);
+  el('c').value = p.collectNow; el('pay').value = p.payNow; el('fg').value = p.fgPolicy;
+  el('cv').textContent = p.collectNow + '%'; el('payv').textContent = p.payNow + '%'; el('fgv').textContent = p.fgPolicy + '%';
+  var btns = document.querySelectorAll('[data-pattern]');
+  for (var b = 0; b < btns.length; b++) btns[b].classList.toggle('on', btns[b].getAttribute('data-pattern') === p.pattern);
+  el('glance').innerHTML = glance(m);
+  el('chart').innerHTML = chart(m);
+  el('t1').innerHTML = table(m, [['Cases sold', 'units', 'sum', 'n'], ['Sales ($20 a case)', 'sales', 'sum'],
+    ['Collected from this quarter&rsquo;s sales', 'collNow', 'sum', '$', 'sub'], ['Collected from last quarter (Q1: beginning receivables)', 'collPrior', 'sum', '$', 'sub'],
+    ['Cash collected', 'collections', 'sum', '$', 'total']]);
+  el('t2').innerHTML = table(m, [['Cases sold', 'units', 'sum', 'n'], ['+ Desired ending inventory', 'endFG', 'last', 'n'],
+    ['&minus; Beginning inventory', 'begFG', 'first', 'n'], ['= Cases to produce', 'production', 'sum', 'n', 'total']]);
+  el('t3').innerHTML = table(m, [['Pounds needed (15 a case)', 'needs', 'sum', 'n'], ['+ Desired ending pounds', 'endRM', 'last', 'n'],
+    ['&minus; Beginning pounds', 'begRM', 'first', 'n'], ['= Pounds to buy', 'buyLbs', 'sum', 'n', 'total'], ['Purchases ($0.20 a lb)', 'purch', 'sum'],
+    ['Paid for this quarter&rsquo;s purchases', 'paidNow', 'sum', '$', 'sub'], ['Paid for last quarter&rsquo;s (Q1: beginning payables)', 'paidPrior', 'sum', '$', 'sub'],
+    ['Cash paid for materials', 'paid', 'sum', '$', 'total']]);
+  el('t8').innerHTML = table(m, [['Beginning cash', '@beg', 'first'], ['+ Cash collected', 'collections', 'sum'], ['&minus; Materials', 'paid', 'sum'],
+    ['&minus; Direct labor', 'labor', 'sum'], ['&minus; Overhead (cash only)', 'overhead', 'sum'], ['&minus; Selling &amp; admin (cash only)', 'selling', 'sum'],
+    ['&minus; Equipment', 'equipment', 'sum'], ['= Total disbursements', '@out', 'sum', '$', 'total'], ['= Cash before financing', '@pre', null, '$', 'total'], ['+ Borrowing', '@borrow', 'sum'],
+    ['&minus; Repayment', '@repay', 'sum'], ['&minus; Interest', '@interest', 'sum'], ['= Ending cash', '@end', 'last', '$', 'total'], ['Loan balance at quarter-end', '@loan', 'last']]);
+}
+function reveal() {
+  var b = BASE.q[0].borrow;
+  var m1 = model({ collectNow: 85, payNow: 50, fgPolicy: 20, pattern: 'seasonal' });
+  var m2 = model({ collectNow: 70, payNow: 100, fgPolicy: 20, pattern: 'seasonal' });
+  var m3 = model({ collectNow: 70, payNow: 50, fgPolicy: 40, pattern: 'seasonal' });
+  var m4 = model({ collectNow: 70, payNow: 50, fgPolicy: 20, pattern: 'even' });
+  var sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
+  el('r1').innerHTML = 'Only cash. Q1 borrowing falls from ' + money(b) + ' to ' + money(m1.q[0].borrow) + ', and operating income stays at ' + money(sum(m1.income)) +
+    ' for the year. The sales were already earned; Hampton just collects sooner.';
+  el('r2').innerHTML = 'It rises to ' + money(m2.q[0].borrow) + '. Paying suppliers sooner is the collections lag in reverse, and income still does not move.';
+  el('r3').innerHTML = 'Up, to ' + money(m3.q[0].borrow) + '. More inventory means making and buying more now, paid for now. Income does not change, because each case sold still carries the budgeted $13.00 cost.';
+  el('r4').innerHTML = (m4.q[0].borrow === 0 ? 'No. Q1 ends at ' + money(m4.q[0].end) + ' without a loan.' : 'Q1 borrowing falls to ' + money(m4.q[0].borrow) + '.') +
+    ' Hampton&rsquo;s Q1 loan exists because it builds for summer while still collecting for winter. Same annual income, different cash timing.';
+}
+function bind() {
+  [['c', 'collectNow'], ['pay', 'payNow'], ['fg', 'fgPolicy']].forEach(function (pair) {
+    el(pair[0]).addEventListener('input', function () { p[pair[1]] = parseInt(this.value, 10); render(); });
+  });
+  var btns = document.querySelectorAll('[data-pattern]');
+  for (var b = 0; b < btns.length; b++) btns[b].addEventListener('click', function () { p.pattern = this.getAttribute('data-pattern'); render(); });
+  el('reset').addEventListener('click', function () { p = { collectNow: 70, payNow: 50, fgPolicy: 20, pattern: 'seasonal' }; render(); });
+}
+bind(); reveal(); render();
+</script>
+</body>
+</html>
