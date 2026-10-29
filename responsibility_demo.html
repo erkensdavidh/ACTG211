@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Scoreboard &middot; ACTG 211</title>
+<style>
+  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF; --ok:#2E6B4F; --oktint:#E6F1EB; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 16px 40px; background:#fff; color:var(--slate); font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; }
+  .wrap { max-width:1060px; margin:0 auto; }
+  .kicker { color:var(--crim); font-weight:bold; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  h1 { font-family:Cambria, Georgia, serif; font-size:28px; margin:4px 0 6px; }
+  .rule { width:110px; height:3px; background:var(--crim); margin-bottom:10px; }
+  .tagline { color:var(--mid); font-size:15px; margin-bottom:14px; }
+  .tabs { display:flex; gap:8px; margin:6px 0 14px; flex-wrap:wrap; }
+  .tabs button { border:1px solid var(--line); background:#fff; color:var(--slate); border-radius:6px; padding:8px 14px; font:inherit; font-weight:bold; cursor:pointer; }
+  .tabs button.on { background:var(--crim); border-color:var(--crim); color:#fff; }
+  .panel { background:var(--bg); border:1px solid var(--pale); border-radius:8px; padding:14px; margin-bottom:14px; }
+  .levers { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px 22px; }
+  .lever label { display:block; font-weight:bold; font-size:14px; }
+  .lever .val { color:var(--crim); font-weight:bold; }
+  .lever .hint { color:var(--gray); font-size:12.5px; }
+  input[type=range] { width:100%; accent-color:var(--crim); margin:6px 0 2px; }
+  .btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .btns button, .seg button { border:1px solid var(--line); background:#fff; color:var(--slate); border-radius:6px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  .seg { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .seg button.on { background:var(--slate); border-color:var(--slate); color:#fff; }
+  .glance { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; }
+  .glance > div { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; }
+  .glance .lbl { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
+  .glance .num { font-size:20px; font-weight:bold; }
+  .yes { color:var(--ok); } .no { color:var(--crim); }
+  h2 { font-family:Cambria, Georgia, serif; font-size:18px; margin:18px 0 6px; }
+  .note { color:var(--gray); font-size:13px; margin:0 0 6px; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { border-collapse:collapse; width:100%; min-width:560px; background:#fff; font-size:14px; }
+  th { background:var(--crim); color:#fff; font-weight:bold; padding:6px 8px; text-align:right; }
+  th:first-child { text-align:left; }
+  td { padding:5px 8px; border-bottom:1px solid var(--pale); text-align:right; white-space:nowrap; }
+  td:first-child { text-align:left; white-space:normal; }
+  tr.total td { font-weight:bold; border-top:2px solid var(--line); }
+  td.chg { color:var(--crim); background:var(--tint); font-weight:bold; }
+  svg { width:100%; height:auto; display:block; background:#fff; border:1px solid var(--pale); border-radius:6px; }
+  .chart { max-width:700px; }
+  details { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; margin-bottom:8px; }
+  summary { cursor:pointer; font-weight:bold; }
+  details p { margin:8px 0 2px; color:var(--mid); }
+  .assume { color:var(--gray); font-size:12.5px; }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker">Phoenix and Imperial &middot; Chapter 11</div>
+<h1>The Scoreboard</h1>
+<div class="rule"></div>
+<div class="tagline">Two of the lecture&rsquo;s problems, live. Change a number and watch which manager says yes, and whether the company agrees. Every number your change moves turns <b style="color:#A32638">crimson</b>.</div>
+
+<div class="tabs" role="tablist">
+  <button type="button" id="tab1" class="on" role="tab">Phoenix: ROI or residual income?</button>
+  <button type="button" id="tab2" role="tab">Imperial: the transfer-price range</button>
+</div>
+
+<!-- ============================== PHOENIX ============================== -->
+<section id="sec1">
+<div class="panel">
+  <div class="levers">
+    <div class="lever"><label for="dnoi">Division NOI today: <span class="val" id="dnoiv"></span></label>
+      <input type="range" id="dnoi" min="200000" max="2000000" step="50000"><div class="hint">Lecture: $1,000,000.</div></div>
+    <div class="lever"><label for="dass">Division average operating assets: <span class="val" id="dassv"></span></label>
+      <input type="range" id="dass" min="2000000" max="10000000" step="250000"><div class="hint">Lecture: $5,000,000.</div></div>
+    <div class="lever"><label for="pnoi">Project NOI: <span class="val" id="pnoiv"></span></label>
+      <input type="range" id="pnoi" min="0" max="600000" step="10000"><div class="hint">Lecture: $300,000.</div></div>
+    <div class="lever"><label for="pass">Project operating assets: <span class="val" id="passv"></span></label>
+      <input type="range" id="pass" min="500000" max="4000000" step="100000"><div class="hint">Lecture: $2,000,000.</div></div>
+    <div class="lever"><label for="rate">Minimum required rate: <span class="val" id="ratev"></span></label>
+      <input type="range" id="rate" min="6" max="20" step="1"><div class="hint">The company&rsquo;s bar. Lecture: 12%.</div></div>
+  </div>
+  <div class="btns"><button type="button" id="reset1">Back to the lecture numbers</button></div>
+</div>
+
+<div class="panel glance" id="glance1"></div>
+
+<h2>One board: RI adds, ROI averages</h2>
+<p class="note">The combined column is the division with the project. ROI blends the two returns into an average; residual income adds the two dollar amounts.</p>
+<div class="scroll" id="board"></div>
+
+<h2>Where each return sits against the bar</h2>
+<p class="note">The dashed line is the company&rsquo;s minimum rate. The project is worth taking for the company when its own ROI clears the dashed line; the ROI-graded manager takes it only when it clears the division&rsquo;s current ROI.</p>
+<div class="chart" id="chart1"></div>
+</section>
+
+<!-- ============================== IMPERIAL ============================== -->
+<section id="sec2" class="hide">
+<div class="panel">
+  <div class="levers">
+    <div class="lever"><label>Imperial&rsquo;s capacity</label>
+      <div class="seg"><button type="button" id="idle" class="on">Idle capacity covers the order</button><button type="button" id="full">No idle capacity</button></div>
+      <div class="hint">Lecture Leg A: idle. Legs B and C: no idle capacity.</div></div>
+    <div class="lever"><label for="vc">Imperial&rsquo;s variable cost per barrel: <span class="val" id="vcv"></span></label>
+      <input type="range" id="vc" min="20" max="70" step="1"><div class="hint">Lecture: $40.</div></div>
+    <div class="lever"><label for="sp">Imperial&rsquo;s outside selling price: <span class="val" id="spv"></span></label>
+      <input type="range" id="sp" min="40" max="100" step="1"><div class="hint">Lecture: $70.</div></div>
+    <div class="lever"><label for="ceil">Pizza Maven&rsquo;s outside supplier quote: <span class="val" id="ceilv"></span></label>
+      <input type="range" id="ceil" min="30" max="100" step="1"><div class="hint">Lecture: $65 (Leg C: $68).</div></div>
+  </div>
+  <div class="btns"><button type="button" id="reset2">Back to Leg A</button></div>
+</div>
+
+<div class="panel glance" id="glance2"></div>
+
+<h2>The range on one line</h2>
+<p class="note">The seller&rsquo;s floor is variable cost plus opportunity cost per barrel; the buyer&rsquo;s ceiling is the outside quote. A zone exists only when the floor sits at or below the ceiling.</p>
+<div class="chart" id="chart2"></div>
+
+<h2>The two numbers, built</h2>
+<div class="scroll" id="build"></div>
+</section>
+
+<h2>Predict first, then change it</h2>
+<details><summary>Phoenix: lower the project&rsquo;s NOI until the RI-graded manager says no. Where is the switch, and what is the project&rsquo;s ROI there?</summary><p id="r1"></p></details>
+<details><summary>Phoenix: now raise the project&rsquo;s NOI until the ROI-graded manager says yes. Where is that switch, and what happens between the two switches?</summary><p id="r2"></p></details>
+<details><summary>Phoenix: set division NOI to $400,000 (an 8% division) and the project&rsquo;s NOI to $200,000. What does each manager do, and does the company want it?</summary><p id="r3"></p></details>
+<details><summary>Imperial: switch to no idle capacity. How high must Pizza Maven&rsquo;s outside quote go before a zone appears?</summary><p id="r4"></p></details>
+
+<h2>What the model assumes</h2>
+<p class="assume">Phoenix: ROI = NOI &divide; average operating assets; residual income = NOI &minus; minimum rate &times; average operating assets. The project&rsquo;s NOI and assets add to the division&rsquo;s. A manager graded on ROI takes the project only if the combined ROI is at least today&rsquo;s; a manager graded on residual income takes it if the project&rsquo;s own residual income is positive; the company wants it when the project&rsquo;s ROI clears the minimum rate. Imperial: the order is 2,000 barrels. With idle capacity nothing is given up, so the opportunity cost is $0; with no idle capacity every transferred barrel replaces an outside sale, so the opportunity cost is the contribution margin per barrel lost (outside price &minus; variable cost). Fixed costs do not change in either case. Everything is pre-tax, as in the course.</p>
+</div>
+
+<script>
+/*MODEL-START*/
+function phoenix(p) {
+  var d = { noi: p.dnoi, ass: p.dass }, j = { noi: p.pnoi, ass: p.pass };
+  var c = { noi: d.noi + j.noi, ass: d.ass + j.ass };
+  [d, j, c].forEach(function (x) { x.roi = x.noi / x.ass; x.chg = p.rate / 100 * x.ass; x.ri = x.noi - x.chg; });
+  return { d: d, j: j, c: c,
+           roiYes: c.roi >= d.roi - 1e-12,     // ROI manager: combined ROI at least today's
+           riYes: j.ri > 0,                    // RI manager: the project adds residual income
+           coYes: j.roi > p.rate / 100 };      // company: the project clears the bar
+}
+function imperial(q) {
+  var opp = q.full ? Math.max(0, q.sp - q.vc) : 0;
+  var floor = q.vc + opp, ceil = q.ceil;
+  return { opp: opp, floor: floor, ceil: ceil, zone: floor <= ceil, width: ceil - floor };
+}
+/*MODEL-END*/
+var L1 = { dnoi: 1000000, dass: 5000000, pnoi: 300000, pass: 2000000, rate: 12 };
+var L2 = { full: false, vc: 40, sp: 70, ceil: 65 };
+var p = Object.assign({}, L1), q = Object.assign({}, L2);
+var B1 = phoenix(L1), B2 = imperial(L2);
+function el(id) { return document.getElementById(id); }
+function money(v) { var x = Math.round(v); return x < 0 ? '$(' + Math.abs(x).toLocaleString('en-US') + ')' : '$' + x.toLocaleString('en-US'); }
+function pct(v) { var x = Math.round(v * 10000) / 100; return (Math.abs(x - Math.round(x)) < 1e-9 ? Math.round(x) : x.toFixed(2)) + '%'; }
+function td(txt, v, b) { return '<td class="' + (Math.abs(v - b) > 1e-6 ? 'chg' : '') + '">' + txt + '</td>'; }
+function verdict(yes, b, wordY, wordN) { return '<div class="num ' + (yes ? 'yes' : 'no') + (yes !== b ? '' : '') + '">' + (yes ? wordY : wordN) + '</div>'; }
+function glance1(m) {
+  var g = function (lbl, inner) { return '<div><div class="lbl">' + lbl + '</div>' + inner + '</div>'; };
+  return g('The project&rsquo;s own ROI', '<div class="num' + (Math.abs(m.j.roi - B1.j.roi) > 1e-9 ? ' no' : '') + '">' + pct(m.j.roi) + '</div>') +
+         g('Manager graded on ROI', verdict(m.roiYes, B1.roiYes, 'Takes it', 'Rejects it')) +
+         g('Manager graded on RI', verdict(m.riYes, B1.riYes, 'Takes it', 'Rejects it')) +
+         g('The company', verdict(m.coYes, B1.coYes, 'Wants it', 'Does not want it'));
+}
+function board(m) {
+  var cols = [['Current division', 'd'], ['The project alone', 'j'], ['Combined', 'c']];
+  var h = '<table><tr><th></th>' + cols.map(function (c) { return '<th>' + c[0] + '</th>'; }).join('') + '</tr>';
+  var rows = [['Net operating income', 'noi', money], ['Average operating assets', 'ass', money], ['ROI', 'roi', pct],
+              ['Capital charge @ ' + p.rate + '%', 'chg', money], ['Residual income', 'ri', money]];
+  rows.forEach(function (r) {
+    h += '<tr class="' + (r[1] === 'ri' ? 'total' : '') + '"><td>' + r[0] + '</td>' +
+         cols.map(function (c) { return td(r[2](m[c[1]][r[1]]), m[c[1]][r[1]], B1[c[1]][r[1]]); }).join('') + '</tr>';
+  });
+  return h + '</table>';
+}
+function chart1(m) {
+  var W = 640, H = 220, left = 150, right = 30, top = 18, rowh = 52;
+  var vals = [m.d.roi, m.j.roi, m.c.roi, p.rate / 100], hi = Math.max(0.3, Math.max.apply(null, vals) * 1.1);
+  var x = function (v) { return left + Math.max(0, v) / hi * (W - left - right); };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ROI of the division, the project and the combination against the minimum rate">';
+  [['Division today', m.d.roi, '#333F48'], ['The project alone', m.j.roi, m.coYes ? '#2E6B4F' : '#A32638'], ['Combined', m.c.roi, '#9AA3AD']].forEach(function (r, i) {
+    var y = top + i * rowh;
+    s += '<text x="' + (left - 10) + '" y="' + (y + 22) + '" font-size="13.5" text-anchor="end" fill="#333F48">' + r[0] + '</text>';
+    s += '<rect x="' + left + '" y="' + (y + 6) + '" width="' + Math.max(1, x(r[1]) - left) + '" height="24" fill="' + r[2] + '"/>';
+    s += '<text x="' + (x(r[1]) + 6) + '" y="' + (y + 23) + '" font-size="13" font-weight="bold" fill="#333F48">' + pct(r[1]) + '</text>';
+  });
+  var xb = x(p.rate / 100);
+  s += '<line x1="' + xb + '" x2="' + xb + '" y1="' + (top - 4) + '" y2="' + (top + 3 * rowh) + '" stroke="#A32638" stroke-width="2" stroke-dasharray="6 4"/>';
+  s += '<text x="' + xb + '" y="' + (top + 3 * rowh + 18) + '" font-size="12.5" text-anchor="middle" fill="#A32638" font-weight="bold">minimum rate ' + p.rate + '%</text>';
+  return s + '</svg>';
+}
+function glance2(m) {
+  var g = function (lbl, v, b, fmt) { return '<div><div class="lbl">' + lbl + '</div><div class="num' + (Math.abs(v - b) > 1e-9 ? ' no' : '') + '">' + fmt(v) + '</div></div>'; };
+  var d = function (v) { return '$' + v; };
+  return g('Opportunity cost per barrel', m.opp, B2.opp, d) + g('Seller&rsquo;s floor', m.floor, B2.floor, d) + g('Buyer&rsquo;s ceiling', m.ceil, B2.ceil, d) +
+         '<div><div class="lbl">Deal zone</div><div class="num ' + (m.zone ? 'yes' : 'no') + '">' + (m.zone ? '$' + m.floor + '&ndash;$' + m.ceil : 'None') + '</div></div>';
+}
+function chart2(m) {
+  var W = 640, H = 130, left = 30, right = 30, lo = 0, hi = 110, y = 62;
+  var x = function (v) { return left + (v - lo) / (hi - lo) * (W - left - right); };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Floor and ceiling on a price line">';
+  s += '<line x1="' + x(lo) + '" x2="' + x(hi) + '" y1="' + y + '" y2="' + y + '" stroke="#9AA3AD" stroke-width="2"/>';
+  for (var t = 0; t <= 100; t += 10) { s += '<line x1="' + x(t) + '" x2="' + x(t) + '" y1="' + (y - 4) + '" y2="' + (y + 4) + '" stroke="#9AA3AD"/><text x="' + x(t) + '" y="' + (y + 20) + '" font-size="11.5" text-anchor="middle" fill="#667085">$' + t + '</text>'; }
+  var a = Math.min(m.floor, m.ceil), b = Math.max(m.floor, m.ceil);
+  s += '<rect x="' + x(a) + '" y="' + (y - 12) + '" width="' + Math.max(2, x(b) - x(a)) + '" height="24" fill="' + (m.zone ? '#CFE3D8' : '#F3C9D0') + '"/>';
+  s += '<text x="' + ((x(a) + x(b)) / 2) + '" y="' + (y + 40) + '" font-size="12.5" text-anchor="middle" font-weight="bold" fill="' + (m.zone ? '#2E6B4F' : '#A32638') + '">' +
+       (m.zone ? 'deal zone, $' + m.width + ' wide' : 'no zone: the floor is $' + (-m.width) + ' above the ceiling') + '</text>';
+  [['floor $' + m.floor, m.floor, '#333F48'], ['ceiling $' + m.ceil, m.ceil, '#A32638']].forEach(function (r, i) {
+    s += '<line x1="' + x(r[1]) + '" x2="' + x(r[1]) + '" y1="' + (y - 22) + '" y2="' + (y + 12) + '" stroke="' + r[2] + '" stroke-width="3"/>';
+    s += '<text x="' + x(r[1]) + '" y="' + (y - 28 - (Math.abs(m.floor - m.ceil) < 12 && i === 1 ? 14 : 0)) + '" font-size="12.5" text-anchor="middle" font-weight="bold" fill="' + r[2] + '">' + r[0] + '</text>';
+  });
+  return s + '</svg>';
+}
+function build(m) {
+  var h = '<table><tr><th></th><th>Per barrel</th></tr>';
+  h += '<tr><td>Imperial&rsquo;s variable cost</td>' + td('$' + q.vc, q.vc, L2.vc) + '</tr>';
+  h += '<tr><td>Opportunity cost: ' + (q.full ? 'contribution margin lost on an outside sale ($' + q.sp + ' &minus; $' + q.vc + ')' : 'idle capacity, nothing given up') + '</td>' + td('$' + m.opp, m.opp, B2.opp) + '</tr>';
+  h += '<tr class="total"><td>Seller&rsquo;s floor</td>' + td('$' + m.floor, m.floor, B2.floor) + '</tr>';
+  h += '<tr class="total"><td>Buyer&rsquo;s ceiling: Pizza Maven&rsquo;s outside quote</td>' + td('$' + m.ceil, m.ceil, B2.ceil) + '</tr>';
+  return h + '</table>';
+}
+function render() {
+  var m = phoenix(p);
+  ['dnoi', 'dass', 'pnoi', 'pass', 'rate'].forEach(function (k) { el(k).value = p[k]; });
+  el('dnoiv').textContent = money(p.dnoi); el('dassv').textContent = money(p.dass); el('pnoiv').textContent = money(p.pnoi);
+  el('passv').textContent = money(p.pass); el('ratev').textContent = p.rate + '%';
+  el('glance1').innerHTML = glance1(m); el('board').innerHTML = board(m); el('chart1').innerHTML = chart1(m);
+  var n = imperial(q);
+  ['vc', 'sp', 'ceil'].forEach(function (k) { el(k).value = q[k]; });
+  el('vcv').textContent = '$' + q.vc; el('spv').textContent = '$' + q.sp; el('ceilv').textContent = '$' + q.ceil;
+  el('idle').className = q.full ? '' : 'on'; el('full').className = q.full ? 'on' : '';
+  el('glance2').innerHTML = glance2(n); el('chart2').innerHTML = chart2(n); el('build').innerHTML = build(n);
+}
+function reveal() {
+  var bar = L1.rate / 100 * L1.pass, sw = L1.dnoi / L1.dass * L1.pass;
+  el('r1').innerHTML = 'At ' + money(bar) + ' of project NOI the project earns exactly ' + pct(bar / L1.pass) + ', the minimum rate, and adds $0 of residual income. At or below that, the RI-graded manager says no, and so does the company: the RI manager&rsquo;s answer and the company&rsquo;s answer switch at the same point.';
+  el('r2').innerHTML = 'At ' + money(sw) + ', where the project earns ' + pct(sw / L1.pass) + ', the division&rsquo;s current ROI. Anywhere between ' + money(bar) + ' and ' + money(sw) +
+    ' the project clears the company&rsquo;s bar but would pull the division&rsquo;s average down, so the ROI-graded manager rejects a project the company wants. That band is the goal incongruence from class: ROI&rsquo;s dark side, charge 2.';
+  var m3 = phoenix({ dnoi: 400000, dass: 5000000, pnoi: 200000, pass: 2000000, rate: 12 });
+  el('r3').innerHTML = 'The division earns ' + pct(m3.d.roi) + ' and the project ' + pct(m3.j.roi) + '. The ROI-graded manager takes it (the combined ROI rises to ' + pct(m3.c.roi) +
+    '), the RI-graded manager rejects it (its residual income is ' + money(m3.j.ri) + '), and the company does not want it: it earns less than the ' + L1.rate + '% bar. ROI can push a weak division toward projects that destroy value, the mirror image of Phoenix.';
+  var f = imperial({ full: true, vc: 40, sp: 70, ceil: 65 });
+  el('r4').innerHTML = 'To $' + f.floor + '. With no idle capacity the floor is $40 + ($70 &minus; $40) = $' + f.floor + ', so Leg C&rsquo;s $68 quote still leaves no zone; at $' + f.floor + ' the zone is a single price, and above it a zone opens. The company agrees: making a barrel internally costs it $' + f.floor + ' once the lost outside sale is counted.';
+}
+function tab(n) {
+  el('sec1').className = n === 1 ? '' : 'hide'; el('sec2').className = n === 2 ? '' : 'hide';
+  el('tab1').className = n === 1 ? 'on' : ''; el('tab2').className = n === 2 ? 'on' : '';
+}
+function bind() {
+  ['dnoi', 'dass', 'pnoi', 'pass', 'rate'].forEach(function (k) { el(k).addEventListener('input', function () { p[k] = parseInt(this.value, 10); render(); }); });
+  ['vc', 'sp', 'ceil'].forEach(function (k) { el(k).addEventListener('input', function () { q[k] = parseInt(this.value, 10); render(); }); });
+  el('idle').addEventListener('click', function () { q.full = false; render(); });
+  el('full').addEventListener('click', function () { q.full = true; render(); });
+  el('reset1').addEventListener('click', function () { p = Object.assign({}, L1); render(); });
+  el('reset2').addEventListener('click', function () { q = Object.assign({}, L2); render(); });
+  el('tab1').addEventListener('click', function () { tab(1); });
+  el('tab2').addEventListener('click', function () { tab(2); });
+}
+bind(); reveal(); render();
+</script>
+</body>
+</html>
