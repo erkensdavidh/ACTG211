@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Decomposition Grid &middot; ACTG 211</title>
+<style>
+  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 16px 40px; background:#fff; color:var(--slate); font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; }
+  .wrap { max-width:1060px; margin:0 auto; }
+  .kicker { color:var(--crim); font-weight:bold; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  h1 { font-family:Cambria, Georgia, serif; font-size:28px; margin:4px 0 6px; }
+  .rule { width:110px; height:3px; background:var(--crim); margin-bottom:10px; }
+  .tagline { color:var(--mid); font-size:15px; margin-bottom:14px; }
+  .panel { background:var(--bg); border:1px solid var(--pale); border-radius:8px; padding:14px; margin-bottom:14px; }
+  .levers { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px 22px; }
+  .lever label { display:block; font-weight:bold; font-size:14px; }
+  .lever .val { color:var(--crim); font-weight:bold; }
+  .lever .hint { color:var(--gray); font-size:12.5px; }
+  .lever.off { display:none; }
+  input[type=range] { width:100%; accent-color:var(--crim); margin:6px 0 2px; }
+  .seg { display:flex; gap:6px; margin-top:6px; }
+  .seg button, .reset { flex:1; border:1px solid var(--line); background:#fff; color:var(--slate); border-radius:6px; padding:7px 6px; font:inherit; font-size:13px; cursor:pointer; }
+  .seg button.on { background:var(--slate); color:#fff; border-color:var(--slate); }
+  .reset { flex:none; margin-top:10px; padding:7px 12px; }
+  .glance { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+  .glance > div { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; }
+  .glance .lbl { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
+  .glance .num { font-size:20px; font-weight:bold; }
+  .glance .num.chg, td.chg { color:var(--crim); }
+  td.chg { background:var(--tint); font-weight:bold; }
+  h2 { font-family:Cambria, Georgia, serif; font-size:18px; margin:18px 0 6px; }
+  .note { color:var(--gray); font-size:13px; margin:0 0 6px; }
+  .two { display:grid; grid-template-columns:3fr 2fr; gap:16px; align-items:start; }
+  @media (max-width:760px) { .two { grid-template-columns:1fr; } }
+  svg { width:100%; height:auto; display:block; background:#fff; border:1px solid var(--pale); border-radius:6px; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px; color:var(--mid); margin-top:6px; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:-1px; margin-right:5px; }
+  table { border-collapse:collapse; width:100%; background:#fff; font-size:14px; }
+  th { background:var(--crim); color:#fff; font-weight:bold; padding:6px 8px; text-align:left; }
+  td { padding:5px 8px; border-bottom:1px solid var(--pale); text-align:right; white-space:nowrap; }
+  td:first-child { text-align:left; white-space:normal; }
+  tr.total td { font-weight:bold; border-top:2px solid var(--line); }
+  details { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; margin-bottom:8px; }
+  summary { cursor:pointer; font-weight:bold; }
+  details p { margin:8px 0 2px; color:var(--mid); }
+  .assume { color:var(--gray); font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker">Widget Co. &middot; Chapter 10</div>
+<h1>The Decomposition Grid</h1>
+<div class="rule"></div>
+<div class="tagline">The variance picture from the lecture, live. The big square is what the output allowed. Paying more adds a strip on top; using more adds a strip on the right; the corner is both at once. Every number your change moves turns <b style="color:#A32638">crimson</b>.</div>
+
+<div class="panel">
+  <div class="levers">
+    <div class="lever"><label>Family</label>
+      <div class="seg"><button type="button" data-fam="dm">Materials: 2 lbs @ $5.00</button><button type="button" data-fam="dl">Labor: 0.5 hr @ $20.00</button></div>
+      <div class="hint" id="famhint"></div></div>
+    <div class="lever"><label for="out">Widgets produced: <span class="val" id="outv"></span></label>
+      <input type="range" id="out" min="800" max="1200" step="50"><div class="hint">Sets the quantity allowed: output &times; the standard per widget. Lecture: 1,000.</div></div>
+    <div class="lever"><label for="ap"><span id="aplbl"></span>: <span class="val" id="apv"></span></label>
+      <input type="range" id="ap" min="4.50" max="5.50" step="0.05"><div class="hint" id="aphint"></div></div>
+    <div class="lever" id="lv_p"><label for="qp">Pounds PURCHASED: <span class="val" id="qpv"></span></label>
+      <input type="range" id="qp" min="1800" max="2600" step="50"><div class="hint">The price variance is computed on these. Lecture: 2,200.</div></div>
+    <div class="lever" id="lv_u"><label for="qu"><span id="qulbl"></span>: <span class="val" id="quv"></span></label>
+      <input type="range" id="qu" min="1800" max="2600" step="50"><div class="hint" id="quhint"></div></div>
+  </div>
+  <button type="button" class="reset" id="reset">Back to the lecture numbers</button>
+</div>
+
+<div class="panel glance" id="glance"></div>
+
+<div class="two">
+  <div>
+    <h2>The picture</h2>
+    <p class="note">The price axis is stretched, as on the slide: a dime on $5.00 would be a sliver at true scale.</p>
+    <div id="chart"></div>
+    <div class="legend"><span><i style="background:#DDE0E3"></i>What output allowed (SQ &times; SP)</span><span><i style="background:#A32638"></i>Unfavorable strip</span><span><i style="background:#9AA3AD"></i>Favorable strip</span><span><i style="background:#6E2430"></i>The corner, reported with price</span></div>
+  </div>
+  <div>
+    <h2>The three amounts</h2>
+    <p class="note">One letter changes per step; the two gaps are the two variances.</p>
+    <div id="amounts"></div>
+  </div>
+</div>
+
+<h2>Predict first, then drag</h2>
+<details><summary>Set pounds used equal to pounds purchased (2,200). What happens to each variance?</summary><p id="r1"></p></details>
+<details><summary>Drop the actual price to $5.00. Which strip vanishes, and does the quantity variance change?</summary><p id="r2"></p></details>
+<details><summary>Sweep the actual price from $4.80 to $5.20. Where does the price variance cross from F to U, and what is it at $4.80?</summary><p id="r3"></p></details>
+<details><summary>Switch to labor. Which slider disappeared, and why?</summary><p id="r4"></p></details>
+
+<h2>What the model assumes</h2>
+<p class="assume">Widget&rsquo;s standard cost card from the lecture: direct materials 2 lbs at $5.00 a pound and direct labor 0.5 hour at $20.00 an hour, per widget. The quantity allowed is output times the standard per widget. Materials: the price variance is (actual price &minus; standard price) &times; pounds purchased, and the quantity variance is (pounds used &minus; pounds allowed) &times; the standard price. Labor has no inventory, so hours are bought and used at the same moment: the rate variance is (actual rate &minus; standard rate) &times; hours worked, and the efficiency variance is (hours worked &minus; hours allowed) &times; the standard rate. A cost variance is U when the actual side exceeds the standard side and F otherwise. In the picture, the joint corner (extra price on the extra quantity) is drawn inside the price strip, because that is where the formula puts it: the buyer set the price on every unit bought, including the wasted ones.</p>
+</div>
+
+<script>
+/*MODEL-START*/
+var FAM = { dm: { sp: 5.00, std: 2, unit: 'lbs', price: 'price', qty: 'quantity', pside: 'Price', qside: 'Quantity' },
+            dl: { sp: 20.00, std: 0.5, unit: 'hours', price: 'rate', qty: 'hours', pside: 'Rate', qside: 'Efficiency' } };
+function model(p) {
+  var f = FAM[p.fam], r = function (x) { return Math.round(x * 100) / 100; };
+  var sq = p.out * f.std, qp = p.fam === 'dm' ? p.qp : p.qu, qu = p.qu;
+  return { sp: f.sp, sq: sq, qp: qp, qu: qu, ap: p.ap,
+           aqap: r(qp * p.ap), aqsp_p: r(qp * f.sp), aqsp_u: r(qu * f.sp), sqsp: r(sq * f.sp),
+           pv: r(qp * (p.ap - f.sp)), qv: r((qu - sq) * f.sp) };
+}
+/*MODEL-END*/
+var LECTURE = { dm: { fam: 'dm', out: 1000, ap: 5.10, qp: 2200, qu: 2100 }, dl: { fam: 'dl', out: 1000, ap: 19.50, qp: 520, qu: 520 } };
+var RANGE = { dm: { ap: [4.50, 5.50, 0.05], q: [1800, 2600, 50] }, dl: { ap: [18, 22, 0.25], q: [450, 600, 10] } };
+var p = copy(LECTURE.dm);
+var BASE = { dm: model(LECTURE.dm), dl: model(LECTURE.dl) };
+function copy(o) { return { fam: o.fam, out: o.out, ap: o.ap, qp: o.qp, qu: o.qu }; }
+function el(id) { return document.getElementById(id); }
+function money(v) { var x = Math.round(v); return x < 0 ? '$(' + Math.abs(x).toLocaleString('en-US') + ')' : '$' + x.toLocaleString('en-US'); }
+function num(v) { return Math.round(v).toLocaleString('en-US'); }
+function fu(d) { return Math.abs(d) < 0.5 ? '$0' : money(Math.abs(d)) + (d > 0 ? ' U' : ' F'); }
+function cls(v, b) { return Math.abs(v - b) > 0.5 ? ' chg' : ''; }
+function chart(m, f) {
+  var W = 600, H = 330, left = 62, right = 16, top = 40, bottom = 46;
+  var qmax = Math.max(m.sq, m.qp, m.qu) * 1.28, x = function (q) { return left + q / qmax * (W - left - right); };
+  var baseH = 150, stretch = 8, y0 = H - bottom, ySP = y0 - baseH;
+  var yP = function (pr) { return ySP - (pr - m.sp) / m.sp * baseH * stretch; };
+  var yAP = Math.max(top, Math.min(y0 - 4, yP(m.ap)));
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="The variance decomposition: allowed square, price strip, quantity strip">';
+  // allowed square
+  s += '<rect x="' + x(0) + '" y="' + ySP + '" width="' + (x(m.sq) - x(0)) + '" height="' + baseH + '" fill="#DDE0E3"/>';
+  s += '<text x="' + (x(0) + (x(m.sq) - x(0)) / 2) + '" y="' + (ySP + baseH / 2) + '" font-size="13" text-anchor="middle" fill="#333F48">allowed: ' + num(m.sq) + ' ' + f.unit + ' &times; $' + m.sp.toFixed(2) + ' = ' + money(m.sqsp) + '</text>';
+  // quantity strip
+  if (Math.abs(m.qu - m.sq) > 0) {
+    var qa = Math.min(m.qu, m.sq), qb = Math.max(m.qu, m.sq), un = m.qu > m.sq;
+    s += '<rect x="' + x(qa) + '" y="' + ySP + '" width="' + (x(qb) - x(qa)) + '" height="' + baseH + '" fill="' + (un ? '#A32638' : '#9AA3AD') + '" opacity="0.85"/>';
+    var wq = x(qb) - x(qa), lab = f.qside + ' ' + fu(m.qv);
+    if (wq >= 110) s += '<text x="' + (x(qa) + wq / 2) + '" y="' + (ySP + baseH / 2 + 18) + '" font-size="12" text-anchor="middle" fill="#fff" font-weight="bold">' + lab + '</text>';
+    else s += '<text x="' + (x(qb) + 6) + '" y="' + (ySP + baseH / 2 + 18) + '" font-size="12" text-anchor="start" fill="#333F48" font-weight="bold">' + lab + '</text>';
+  }
+  // price strip over the purchased quantity
+  if (Math.abs(m.ap - m.sp) > 0.0001) {
+    var un2 = m.ap > m.sp, ya = Math.min(ySP, yAP), hh = Math.abs(ySP - yAP);
+    s += '<rect x="' + x(0) + '" y="' + ya + '" width="' + (x(m.qp) - x(0)) + '" height="' + hh + '" fill="' + (un2 ? '#A32638' : '#9AA3AD') + '" opacity="0.85"/>';
+    if (m.qp > m.sq) s += '<rect x="' + x(m.sq) + '" y="' + ya + '" width="' + (x(m.qp) - x(m.sq)) + '" height="' + hh + '" fill="' + (un2 ? '#6E2430' : '#5A646D') + '"/>';
+    s += '<text x="' + (x(0) + 8) + '" y="' + (ya - 6) + '" font-size="12" fill="#333F48" font-weight="bold">' + f.pside + ' ' + fu(m.pv) + ' on ' + num(m.qp) + ' ' + (p.fam === 'dm' ? 'purchased' : 'worked') + '</text>';
+  }
+  // axes and ticks
+  s += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="#333F48"/><line x1="' + left + '" x2="' + left + '" y1="' + (top - 10) + '" y2="' + y0 + '" stroke="#333F48"/>';
+  s += '<text x="' + (left - 6) + '" y="' + (ySP + 4) + '" font-size="12" text-anchor="end" fill="#667085">SP $' + m.sp.toFixed(2) + '</text>';
+  s += '<text x="' + (left - 6) + '" y="' + (yAP + 4) + '" font-size="12" text-anchor="end" fill="#A32638">AP $' + m.ap.toFixed(2) + '</text>';
+  var ticks = [['SQ ' + num(m.sq), m.sq, 0]];
+  if (p.fam === 'dm') { ticks.push(['used ' + num(m.qu), m.qu, 14]); ticks.push(['purchased ' + num(m.qp), m.qp, 28]); } else ticks.push(['worked ' + num(m.qu), m.qu, 14]);
+  ticks.forEach(function (t) {
+    s += '<line x1="' + x(t[1]) + '" x2="' + x(t[1]) + '" y1="' + y0 + '" y2="' + (y0 + 5) + '" stroke="#333F48"/>';
+    s += '<text x="' + x(t[1]) + '" y="' + (y0 + 17 + t[2]) + '" font-size="12" text-anchor="middle" fill="#333F48">' + t[0] + '</text>';
+  });
+  s += '<text x="' + (W - right) + '" y="' + (top - 16) + '" font-size="11" text-anchor="end" fill="#667085">price axis &uarr; (stretched) &middot; quantity axis &rarr;</text>';
+  return s + '</svg>';
+}
+function amounts(m, f) {
+  var b = BASE[p.fam], dm = p.fam === 'dm';
+  var row = function (lab, v, bv, tot) { return '<tr' + (tot ? ' class="total"' : '') + '><td>' + lab + '</td><td class="' + cls(v, bv) + '">' + money(v) + '</td></tr>'; };
+  var h = '<table><tr><th>Amount</th><th style="text-align:right">$</th></tr>';
+  h += row('AQ &times; AP &nbsp;(' + num(m.qp) + (dm ? ' purchased' : ' hours') + ' &times; $' + m.ap.toFixed(2) + ')', m.aqap, b.aqap);
+  h += row('AQ &times; SP &nbsp;(' + num(m.qp) + (dm ? ' purchased' : ' hours') + ' &times; $' + m.sp.toFixed(2) + ')', m.aqsp_p, b.aqsp_p);
+  h += row('<b>' + f.pside + ' variance</b>, the gap above', m.pv, b.pv, true);
+  if (dm) h += row('AQ &times; SP &nbsp;(' + num(m.qu) + ' used &times; $' + m.sp.toFixed(2) + ')', m.aqsp_u, b.aqsp_u);
+  h += row('SQ &times; SP &nbsp;(' + num(m.sq) + ' allowed &times; $' + m.sp.toFixed(2) + ')', m.sqsp, b.sqsp);
+  h += row('<b>' + f.qside + ' variance</b>, the gap above', m.qv, b.qv, true);
+  return h + '</table>' + (dm ? '<p class="note">Two different AQs on purpose: purchased on the price side, used on the quantity side.</p>' : '<p class="note">One AQ: labor has no inventory, so hours are bought and used at the same moment.</p>');
+}
+function glance(m) {
+  var b = BASE[p.fam], f = FAM[p.fam];
+  var cell = function (lbl, v, bv, txt) { return '<div><div class="lbl">' + lbl + '</div><div class="num' + cls(v, bv) + '">' + txt + '</div></div>'; };
+  return cell('Quantity allowed', m.sq, b.sq, num(m.sq) + ' ' + f.unit) + cell(f.pside + ' variance', m.pv, b.pv, fu(m.pv)) + cell(f.qside + ' variance', m.qv, b.qv, fu(m.qv)) +
+         cell('Family total', m.pv + m.qv, b.pv + b.qv, fu(m.pv + m.qv));
+}
+function render() {
+  var f = FAM[p.fam], R = RANGE[p.fam], m = model(p), dm = p.fam === 'dm';
+  var btns = document.querySelectorAll('[data-fam]');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', btns[i].getAttribute('data-fam') === p.fam);
+  el('famhint').textContent = dm ? 'Two doors: price at the purchase, quantity at the issue to production.' : 'One door: both variances at payroll.';
+  el('lv_p').classList.toggle('off', !dm);
+  el('ap').min = R.ap[0]; el('ap').max = R.ap[1]; el('ap').step = R.ap[2]; el('ap').value = p.ap;
+  el('qp').min = R.q[0]; el('qp').max = R.q[1]; el('qp').step = R.q[2]; el('qp').value = p.qp;
+  el('qu').min = R.q[0]; el('qu').max = R.q[1]; el('qu').step = R.q[2]; el('qu').value = p.qu;
+  el('out').value = p.out; el('outv').textContent = num(p.out);
+  el('aplbl').textContent = dm ? 'Actual price per pound' : 'Actual wage rate per hour';
+  el('apv').textContent = '$' + p.ap.toFixed(2);
+  el('aphint').textContent = dm ? 'Standard $5.00. Lecture: $5.10.' : 'Standard $20.00. Lecture: $19.50.';
+  el('qpv').textContent = num(p.qp);
+  el('qulbl').textContent = dm ? 'Pounds USED in production' : 'Hours worked';
+  el('quv').textContent = num(p.qu);
+  el('quhint').textContent = dm ? 'The quantity variance is computed on these, at the standard price. Lecture: 2,100.' : 'Both variances use these. Lecture: 520.';
+  el('glance').innerHTML = glance(m); el('chart').innerHTML = chart(m, f); el('amounts').innerHTML = amounts(m, f);
+}
+function reveal() {
+  var m1 = model({ fam: 'dm', out: 1000, ap: 5.10, qp: 2200, qu: 2200 });
+  var m2 = model({ fam: 'dm', out: 1000, ap: 5.00, qp: 2200, qu: 2100 });
+  var m3 = model({ fam: 'dm', out: 1000, ap: 4.80, qp: 2200, qu: 2100 });
+  var m4 = model(LECTURE.dl);
+  el('r1').innerHTML = 'The quantity variance doubles to ' + fu(m1.qv) + ': 200 pounds over the allowance instead of 100, at the standard $5.00. The price variance stays at ' + fu(m1.pv) +
+    ', because it was already computed on all 2,200 pounds bought. The 100 pounds that used to sit in inventory were charged to the buyer either way.';
+  el('r2').innerHTML = 'The price strip on top vanishes (' + fu(m2.pv) + '), and the quantity variance does not move: still ' + fu(m2.qv) + '. The waste is priced at the standard $5.00 on purpose, so the buyer&rsquo;s miss never leaks into production&rsquo;s number.';
+  el('r3').innerHTML = 'It crosses at exactly the standard price, $5.00, where the strip disappears. At $4.80 the price variance is ' + fu(m3.pv) + ': a $0.20 saving on every one of the 2,200 pounds bought, and the strip moves below the SP line. The quantity variance is untouched at ' + fu(m3.qv) + '.';
+  el('r4').innerHTML = 'The purchased slider. Labor has no inventory account: hours are bought and used at the same moment, so one quantity does both jobs. At the lecture numbers the rate variance is ' + fu(m4.pv) +
+    ' and the efficiency variance ' + fu(m4.qv) + ', both on the same 520 hours. That is why bought-versus-used exists only for materials.';
+}
+function bind() {
+  var btns = document.querySelectorAll('[data-fam]');
+  for (var i = 0; i < btns.length; i++) btns[i].addEventListener('click', function () { p = copy(LECTURE[this.getAttribute('data-fam')]); render(); });
+  el('out').addEventListener('input', function () { p.out = parseInt(this.value, 10); render(); });
+  el('ap').addEventListener('input', function () { p.ap = parseFloat(this.value); render(); });
+  el('qp').addEventListener('input', function () { p.qp = parseInt(this.value, 10); render(); });
+  el('qu').addEventListener('input', function () { p.qu = parseInt(this.value, 10); if (p.fam === 'dl') p.qp = p.qu; render(); });
+  el('reset').addEventListener('click', function () { p = copy(LECTURE[p.fam]); render(); });
+}
+bind(); reveal(); render();
+</script>
+</body>
+</html>

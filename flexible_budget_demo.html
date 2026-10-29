@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Yardstick &middot; ACTG 211</title>
+<style>
+  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 16px 40px; background:#fff; color:var(--slate); font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; }
+  .wrap { max-width:1060px; margin:0 auto; }
+  .kicker { color:var(--crim); font-weight:bold; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  h1 { font-family:Cambria, Georgia, serif; font-size:28px; margin:4px 0 6px; }
+  .rule { width:110px; height:3px; background:var(--crim); margin-bottom:10px; }
+  .tagline { color:var(--mid); font-size:15px; margin-bottom:14px; }
+  .panel { background:var(--bg); border:1px solid var(--pale); border-radius:8px; padding:14px; margin-bottom:14px; }
+  .levers { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px 22px; }
+  .lever label { display:block; font-weight:bold; font-size:14px; }
+  .lever .val { color:var(--crim); font-weight:bold; }
+  .lever .hint { color:var(--gray); font-size:12.5px; }
+  input[type=range] { width:100%; accent-color:var(--crim); margin:6px 0 2px; }
+  .btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .btns button { border:1px solid var(--line); background:#fff; color:var(--slate); border-radius:6px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  .glance { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; }
+  .glance > div { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; }
+  .glance .lbl { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
+  .glance .num { font-size:20px; font-weight:bold; }
+  .glance .num.chg, td.chg { color:var(--crim); }
+  td.chg { background:var(--tint); font-weight:bold; }
+  td.zero { color:var(--gray); }
+  h2 { font-family:Cambria, Georgia, serif; font-size:18px; margin:18px 0 6px; }
+  .note { color:var(--gray); font-size:13px; margin:0 0 6px; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { border-collapse:collapse; width:100%; min-width:560px; background:#fff; font-size:14px; }
+  th { background:var(--crim); color:#fff; font-weight:bold; padding:6px 8px; text-align:right; }
+  th:first-child { text-align:left; }
+  th.soft { background:var(--slate); }
+  td { padding:5px 8px; border-bottom:1px solid var(--pale); text-align:right; white-space:nowrap; }
+  td:first-child { text-align:left; white-space:normal; }
+  tr.total td { font-weight:bold; border-top:2px solid var(--line); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px) { .two { grid-template-columns:1fr; } }
+  #chart { max-width:640px; }
+  svg { width:100%; height:auto; display:block; background:#fff; border:1px solid var(--pale); border-radius:6px; }
+  details { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; margin-bottom:8px; }
+  summary { cursor:pointer; font-weight:bold; }
+  details p { margin:8px 0 2px; color:var(--mid); }
+  .assume { color:var(--gray); font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker">Hampton Freeze &middot; Chapter 9</div>
+<h1>The Yardstick</h1>
+<div class="rule"></div>
+<div class="tagline">Hampton&rsquo;s third quarter, live. Move a lever and watch what the naive report says next to what the five-column report says. Every number your change moves turns <b style="color:#A32638">crimson</b>.</div>
+
+<div class="panel">
+  <div class="levers">
+    <div class="lever"><label for="vol">Cases actually sold: <span class="val" id="volv"></span></label>
+      <input type="range" id="vol" min="30000" max="50000" step="1000"><div class="hint">The plan was 40,000. Lecture: 44,000, the heat wave.</div></div>
+    <div class="lever"><label for="price">Actual selling price: <span class="val" id="pricev"></span></label>
+      <input type="range" id="price" min="18" max="22" step="0.05"><div class="hint">The plan was $20.00. Lecture: $20.25, priced up for the summer.</div></div>
+    <div class="lever"><label for="vc">Actual variable cost per case: <span class="val" id="vcv"></span></label>
+      <input type="range" id="vc" min="11" max="14" step="0.01"><div class="hint">The plan was $12.40. Lecture: $556,000 for 44,000 cases, $12.64 a case.</div></div>
+    <div class="lever"><label for="fc">Actual fixed costs: <span class="val" id="fcv"></span></label>
+      <input type="range" id="fc" min="70000" max="110000" step="100"><div class="hint">The plan was $90,600. Lecture: $85,600.</div></div>
+  </div>
+  <div class="btns">
+    <button type="button" id="reset">Back to the lecture numbers</button>
+    <button type="button" id="perfect">Everything at plan except volume</button>
+  </div>
+</div>
+
+<div class="panel glance" id="glance"></div>
+
+<h2>Net income, from the plan to what happened</h2>
+<p class="note">The static budget is where the quarter was supposed to land. The first step is volume (the activity variance), the second is execution (the revenue and spending variances). The naive report skips the middle and reports only the total.</p>
+<div id="chart"></div>
+
+<h2>The naive report: actual against the static budget</h2>
+<p class="note">One variance per line, and every line compares a budget built for 40,000 cases with results from however many cases were sold.</p>
+<div class="scroll" id="naive"></div>
+
+<h2>The five-column report</h2>
+<p class="note">The flexible budget is the plan&rsquo;s formulas at the volume that actually happened. Execution lives between Actual and Flexible; volume lives between Flexible and Static.</p>
+<div class="scroll" id="five"></div>
+
+<h2>Predict first, then drag</h2>
+<details><summary>Click &ldquo;Everything at plan except volume&rdquo;, then drag volume from 44,000 down to 36,000. Which column moves, and which one stays at $0?</summary><p id="r1"></p></details>
+<details><summary>With everything at plan, set volume to exactly 40,000, then raise the variable cost per case to $12.80. Now which column moves?</summary><p id="r2"></p></details>
+<details><summary>Volume 44,000, everything else at plan. The naive report shows variable costs $49,600 U. What does the five-column report say about spending?</summary><p id="r3"></p></details>
+<details><summary>Drag volume below 40,000. The cost lines in the activity column turn F. Is that good news?</summary><p id="r4"></p></details>
+
+<h2>What the model assumes</h2>
+<p class="assume">The static budget is the lecture&rsquo;s: 40,000 cases at $20.00, variable costs of $12.40 a case, and fixed costs of $90,600 for the quarter. Actual revenue is cases sold times the actual price; actual variable costs are cases sold times the actual cost per case; actual fixed costs are whatever the lever says, at any volume. The flexible budget keeps the plan&rsquo;s formulas and swaps in the actual volume. Labels follow the course rule: F when the line made income higher than the budget, U when lower; a fixed line shows $0 in the activity column. Connect and the textbook call the static budget the planning budget.</p>
+</div>
+
+<script>
+/*MODEL-START*/
+var PLAN = { vol: 40000, price: 20, vc: 12.40, fc: 90600 };
+function model(p) {
+  var r = function (x) { return Math.round(x); };
+  var st = { rev: PLAN.vol * PLAN.price, vc: r(PLAN.vol * PLAN.vc), fc: PLAN.fc };
+  var fl = { rev: r(p.vol * PLAN.price), vc: r(p.vol * PLAN.vc), fc: PLAN.fc };
+  var ac = { rev: r(p.vol * p.price), vc: r(p.vol * p.vc), fc: r(p.fc) };
+  [st, fl, ac].forEach(function (c) { c.ni = c.rev - c.vc - c.fc; });
+  return { st: st, fl: fl, ac: ac };
+}
+/*MODEL-END*/
+var LECTURE = { vol: 44000, price: 20.25, vc: 556000 / 44000, fc: 85600 };
+var p = { vol: LECTURE.vol, price: LECTURE.price, vc: LECTURE.vc, fc: LECTURE.fc };
+var BASE = model(LECTURE);
+var LINES = [['Revenue', 'rev', true], ['Variable costs', 'vc', false], ['Fixed costs', 'fc', false], ['Net income', 'ni', true]];
+function el(id) { return document.getElementById(id); }
+function money(v) { var x = Math.round(v); return x < 0 ? '$(' + Math.abs(x).toLocaleString('en-US') + ')' : '$' + x.toLocaleString('en-US'); }
+function fu(d, income) {            // d = right-hand amount minus left-hand amount; income lines: higher is F
+  if (Math.abs(d) < 0.5) return '$0';
+  var fav = income ? d > 0 : d < 0;
+  return money(Math.abs(d)) + (fav ? ' F' : ' U');
+}
+function cls(v, b) { return Math.abs(v - b) > 0.5 ? 'chg' : ''; }
+function tdv(label, v, b, isVar) {
+  var c = cls(v, b); if (isVar && Math.abs(v) < 0.5) c += ' zero';
+  return '<td class="' + c + '">' + label + '</td>';
+}
+function naive(m) {
+  var h = '<table><tr><th></th><th class="soft">Static budget (40,000)</th><th>Actual (' + p.vol.toLocaleString('en-US') + ')</th><th>Variance</th></tr>';
+  LINES.forEach(function (L) {
+    var k = L[1], inc = L[2], v = m.ac[k] - m.st[k], b = BASE.ac[k] - BASE.st[k];
+    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td><td>' + money(m.st[k]) + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(v, inc), v, b, true) + '</tr>';
+  });
+  return h + '</table>';
+}
+function five(m) {
+  var h = '<table><tr><th></th><th>Actual (' + p.vol.toLocaleString('en-US') + ')</th><th>Revenue &amp; spending var.</th><th>Flexible budget (' + p.vol.toLocaleString('en-US') + ')</th><th>Activity var.</th><th class="soft">Static budget (40,000)</th></tr>';
+  LINES.forEach(function (L) {
+    var k = L[1], inc = L[2];
+    var rs = m.ac[k] - m.fl[k], av = m.fl[k] - m.st[k], brs = BASE.ac[k] - BASE.fl[k], bav = BASE.fl[k] - BASE.st[k];
+    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(rs, inc), rs, brs, true) +
+         tdv(money(m.fl[k]), m.fl[k], BASE.fl[k]) + tdv(fu(av, inc), av, bav, true) + '<td>' + money(m.st[k]) + '</td></tr>';
+  });
+  return h + '</table>';
+}
+function chart(m) {
+  var W = 560, H = 230, left = 70, right = 10, top = 16, bottom = 34;
+  var steps = [['Static', m.st.ni, m.st.ni], ['Activity', m.st.ni, m.fl.ni], ['Flexible', m.fl.ni, m.fl.ni], ['Rev. &amp; spending', m.fl.ni, m.ac.ni], ['Actual', m.ac.ni, m.ac.ni]];
+  var vals = steps.reduce(function (a, s) { return a.concat([s[1], s[2]]); }, []);
+  var hi = Math.max.apply(null, vals), lo = Math.min(0, Math.min.apply(null, vals));
+  var span = hi - lo || 1, y = function (v) { return top + (hi - v) / span * (H - top - bottom); };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net income: static budget, activity variance, flexible budget, revenue and spending variances, actual">';
+  s += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="#9AA3AD" stroke-width="1"/>';
+  s += '<text x="' + (left - 6) + '" y="' + (y(hi) + 4) + '" font-size="13" text-anchor="end" fill="#667085">' + money(hi) + '</text>';
+  s += '<text x="' + (left - 6) + '" y="' + (y(0) + 4) + '" font-size="13" text-anchor="end" fill="#667085">$0</text>';
+  var gw = (W - left - right) / 5, bw = gw * 0.52;
+  steps.forEach(function (st, j) {
+    var x0 = left + j * gw + (gw - bw) / 2, a = st[1], b = st[2], bar = (j === 1 || j === 3);
+    var top_ = bar ? Math.min(y(a), y(b)) : Math.min(y(0), y(a)), ht = bar ? Math.abs(y(a) - y(b)) : Math.abs(y(a) - y(0));
+    var fill = bar ? (b >= a ? '#9AA3AD' : '#A32638') : '#333F48';
+    s += '<rect x="' + x0 + '" y="' + top_ + '" width="' + bw + '" height="' + Math.max(1, ht) + '" fill="' + fill + '"/>';
+    var lab = bar ? fu(b - a, true) : money(a);
+    s += '<text x="' + (x0 + bw / 2) + '" y="' + (top_ - 4) + '" font-size="12" text-anchor="middle" fill="#333F48" font-weight="bold">' + lab + '</text>';
+    s += '<text x="' + (x0 + bw / 2) + '" y="' + (H - 12) + '" font-size="12.5" text-anchor="middle" fill="#333F48">' + st[0] + '</text>';
+  });
+  return s + '</svg>';
+}
+function glance(m) {
+  var cell = function (lbl, v, b) { return '<div><div class="lbl">' + lbl + '</div><div class="num ' + cls(v, b) + '">' + fu(v, true) + '</div></div>'; };
+  return cell('Naive report: net income vs. plan', m.ac.ni - m.st.ni, BASE.ac.ni - BASE.st.ni) +
+         cell('Activity variance (volume)', m.fl.ni - m.st.ni, BASE.fl.ni - BASE.st.ni) +
+         cell('Revenue &amp; spending (execution)', m.ac.ni - m.fl.ni, BASE.ac.ni - BASE.fl.ni);
+}
+function render() {
+  var m = model(p);
+  el('vol').value = p.vol; el('price').value = p.price.toFixed(2); el('vc').value = p.vc.toFixed(2); el('fc').value = p.fc;
+  el('volv').textContent = p.vol.toLocaleString('en-US'); el('pricev').textContent = '$' + p.price.toFixed(2);
+  el('vcv').textContent = '$' + p.vc.toFixed(2); el('fcv').textContent = money(p.fc);
+  el('glance').innerHTML = glance(m); el('chart').innerHTML = chart(m);
+  el('naive').innerHTML = naive(m); el('five').innerHTML = five(m);
+}
+function reveal() {
+  var m1 = model({ vol: 36000, price: 20, vc: 12.40, fc: 90600 });
+  var m2 = model({ vol: 40000, price: 20, vc: 12.80, fc: 90600 });
+  var m3 = model({ vol: 44000, price: 20, vc: 12.40, fc: 90600 });
+  var m4 = model({ vol: 38000, price: 20.25, vc: 556000 / 44000, fc: 85600 });
+  el('r1').innerHTML = 'Only the activity column: revenue ' + fu(m1.fl.rev - m1.st.rev, true) + ', variable costs ' + fu(m1.fl.vc - m1.st.vc, false) + ', fixed costs $0, net income ' +
+    fu(m1.fl.ni - m1.st.ni, true) + '. Every revenue and spending variance is $0, because the plan&rsquo;s formulas were followed exactly at the volume that happened. Volume alone moved the number, and nobody in operations did anything differently.';
+  el('r2').innerHTML = 'Only the revenue and spending column: variable costs ' + fu(m2.ac.vc - m2.fl.vc, false) + '. At the planned volume the static and flexible budgets are the same column, so the naive report and the five-column report agree: ' +
+    fu(m2.ac.vc - m2.st.vc, false) + ' either way. The two reports only disagree when volume differs from plan.';
+  el('r3').innerHTML = 'Spending was exactly on the yardstick: $0. The $49,600 U is 4,000 extra cases at $12.40 each, all of it volume. Anyone reading the naive report would send the plant manager a question about costs that were perfectly controlled.';
+  el('r4').innerHTML = 'No. At 38,000 cases the variable-cost line shows ' + fu(m4.fl.vc - m4.st.vc, false) + ' in the activity column, but Hampton spent less only because it sold less, and revenue shows ' +
+    fu(m4.fl.rev - m4.st.rev, true) + ' on the same line of reasoning. F and U report the effect on income, not whether anything was done well. Spending less because you did less is not performance.';
+}
+function bind() {
+  el('vol').addEventListener('input', function () { p.vol = parseInt(this.value, 10); render(); });
+  el('price').addEventListener('input', function () { p.price = parseFloat(this.value); render(); });
+  el('vc').addEventListener('input', function () { p.vc = parseFloat(this.value); render(); });
+  el('fc').addEventListener('input', function () { p.fc = parseInt(this.value, 10); render(); });
+  el('reset').addEventListener('click', function () { p = { vol: LECTURE.vol, price: LECTURE.price, vc: LECTURE.vc, fc: LECTURE.fc }; render(); });
+  el('perfect').addEventListener('click', function () { p.price = PLAN.price; p.vc = PLAN.vc; p.fc = PLAN.fc; render(); });
+}
+bind(); reveal(); render();
+</script>
+</body>
+</html>
