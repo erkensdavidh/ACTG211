@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Yardstick &middot; ACTG 211</title>
 <style>
-  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF; }
+  :root { --crim:#A32638; --slate:#333F48; --gray:#667085; --mid:#5A646D; --line:#C9CED6; --pale:#E1E5E9; --bg:#F5F6F7; --tint:#FAEDEF;
+          --fav:#1E6B34; --favbg:#E3F2E7; --unf:#A32638; --unfbg:#FBE3E6; }
   * { box-sizing:border-box; }
   body { margin:0; padding:18px 16px 40px; background:#fff; color:var(--slate); font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; }
   .wrap { max-width:1060px; margin:0 auto; }
@@ -25,9 +26,13 @@
   .glance > div { background:#fff; border:1px solid var(--pale); border-radius:6px; padding:8px 10px; }
   .glance .lbl { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
   .glance .num { font-size:20px; font-weight:bold; }
-  .glance .num.chg, td.chg { color:var(--crim); }
-  td.chg { background:var(--tint); font-weight:bold; }
+  td.fav, .glance .num.fav { background:var(--favbg); color:var(--fav); }
+  td.unf, .glance .num.unf { background:var(--unfbg); color:var(--unf); }
+  .glance .num.fav, .glance .num.unf { display:inline-block; border-radius:4px; padding:0 6px; }
   td.zero { color:var(--gray); }
+  td.chg, .glance .num.chg { font-weight:bold; box-shadow:inset 0 0 0 2px var(--slate); }
+  .key { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--mid); margin:0 0 6px; }
+  .key span b { display:inline-block; padding:0 6px; border-radius:4px; }
   h2 { font-family:Cambria, Georgia, serif; font-size:18px; margin:18px 0 6px; }
   .note { color:var(--gray); font-size:13px; margin:0 0 6px; }
   .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -53,7 +58,8 @@
 <div class="kicker">Hampton Freeze &middot; Chapter 9</div>
 <h1>The Yardstick</h1>
 <div class="rule"></div>
-<div class="tagline">Hampton&rsquo;s third quarter, live. Move a lever and watch what the naive report says next to what the five-column report says. Every number your change moves turns <b style="color:#A32638">crimson</b>.</div>
+<div class="tagline">Hampton&rsquo;s third quarter, live. Move a lever and watch what the naive report says next to what the five-column report says. Every number your change moves gets a dark outline.</div>
+<div class="key"><span><b style="background:#E3F2E7;color:#1E6B34">$5,600 F</b> favorable: raises income</span><span><b style="background:#FBE3E6;color:#A32638">$10,400 U</b> unfavorable: lowers income</span><span><b style="box-shadow:inset 0 0 0 2px #333F48">$249,400</b> moved by your change</span></div>
 
 <div class="panel">
   <div class="levers">
@@ -74,8 +80,8 @@
 
 <div class="panel glance" id="glance"></div>
 
-<h2>Net income, from the plan to what happened</h2>
-<p class="note">The static budget is where the quarter was supposed to land. The first step is volume (the activity variance), the second is execution (the revenue and spending variances). The naive report skips the middle and reports only the total.</p>
+<h2>Net income, in the order of the five-column report</h2>
+<p class="note">The same left-to-right order as the report: Actual, revenue and spending variances, Flexible, activity variance, Static. Read it from the right: the static budget is where the quarter was supposed to land; volume (the activity variance) takes it to the flexible budget; execution (the revenue and spending variances) takes it to actual. Green bars raised income, red bars lowered it. The naive report skips the middle and reports only the total.</p>
 <div id="chart"></div>
 
 <h2>The naive report: actual against the static budget</h2>
@@ -120,15 +126,16 @@ function fu(d, income) {            // d = right-hand amount minus left-hand amo
   return money(Math.abs(d)) + (fav ? ' F' : ' U');
 }
 function cls(v, b) { return Math.abs(v - b) > 0.5 ? 'chg' : ''; }
-function tdv(label, v, b, isVar) {
-  var c = cls(v, b); if (isVar && Math.abs(v) < 0.5) c += ' zero';
+function fuClass(d, income) { if (Math.abs(d) < 0.5) return 'zero'; return (income ? d > 0 : d < 0) ? 'fav' : 'unf'; }
+function tdv(label, v, b, isVar, income) {
+  var c = cls(v, b); if (isVar) c += ' ' + fuClass(v, income);
   return '<td class="' + c + '">' + label + '</td>';
 }
 function naive(m) {
   var h = '<table><tr><th></th><th class="soft">Static budget (40,000)</th><th>Actual (' + p.vol.toLocaleString('en-US') + ')</th><th>Variance</th></tr>';
   LINES.forEach(function (L) {
     var k = L[1], inc = L[2], v = m.ac[k] - m.st[k], b = BASE.ac[k] - BASE.st[k];
-    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td><td>' + money(m.st[k]) + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(v, inc), v, b, true) + '</tr>';
+    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td><td>' + money(m.st[k]) + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(v, inc), v, b, true, inc) + '</tr>';
   });
   return h + '</table>';
 }
@@ -137,18 +144,19 @@ function five(m) {
   LINES.forEach(function (L) {
     var k = L[1], inc = L[2];
     var rs = m.ac[k] - m.fl[k], av = m.fl[k] - m.st[k], brs = BASE.ac[k] - BASE.fl[k], bav = BASE.fl[k] - BASE.st[k];
-    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(rs, inc), rs, brs, true) +
-         tdv(money(m.fl[k]), m.fl[k], BASE.fl[k]) + tdv(fu(av, inc), av, bav, true) + '<td>' + money(m.st[k]) + '</td></tr>';
+    h += '<tr class="' + (k === 'ni' ? 'total' : '') + '"><td>' + L[0] + '</td>' + tdv(money(m.ac[k]), m.ac[k], BASE.ac[k]) + tdv(fu(rs, inc), rs, brs, true, inc) +
+         tdv(money(m.fl[k]), m.fl[k], BASE.fl[k]) + tdv(fu(av, inc), av, bav, true, inc) + '<td>' + money(m.st[k]) + '</td></tr>';
   });
   return h + '</table>';
 }
 function chart(m) {
   var W = 560, H = 230, left = 70, right = 10, top = 16, bottom = 34;
-  var steps = [['Static', m.st.ni, m.st.ni], ['Activity', m.st.ni, m.fl.ni], ['Flexible', m.fl.ni, m.fl.ni], ['Rev. &amp; spending', m.fl.ni, m.ac.ni], ['Actual', m.ac.ni, m.ac.ni]];
+  // report order, left to right; each variance bar runs from the column on its right to the column on its left
+  var steps = [['Actual', m.ac.ni, m.ac.ni], ['Rev. &amp; spending', m.fl.ni, m.ac.ni], ['Flexible', m.fl.ni, m.fl.ni], ['Activity', m.st.ni, m.fl.ni], ['Static', m.st.ni, m.st.ni]];
   var vals = steps.reduce(function (a, s) { return a.concat([s[1], s[2]]); }, []);
   var hi = Math.max.apply(null, vals), lo = Math.min(0, Math.min.apply(null, vals));
   var span = hi - lo || 1, y = function (v) { return top + (hi - v) / span * (H - top - bottom); };
-  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net income: static budget, activity variance, flexible budget, revenue and spending variances, actual">';
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net income in report order: actual, revenue and spending variances, flexible budget, activity variance, static budget">';
   s += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="#9AA3AD" stroke-width="1"/>';
   s += '<text x="' + (left - 6) + '" y="' + (y(hi) + 4) + '" font-size="13" text-anchor="end" fill="#667085">' + money(hi) + '</text>';
   s += '<text x="' + (left - 6) + '" y="' + (y(0) + 4) + '" font-size="13" text-anchor="end" fill="#667085">$0</text>';
@@ -156,7 +164,7 @@ function chart(m) {
   steps.forEach(function (st, j) {
     var x0 = left + j * gw + (gw - bw) / 2, a = st[1], b = st[2], bar = (j === 1 || j === 3);
     var top_ = bar ? Math.min(y(a), y(b)) : Math.min(y(0), y(a)), ht = bar ? Math.abs(y(a) - y(b)) : Math.abs(y(a) - y(0));
-    var fill = bar ? (b >= a ? '#9AA3AD' : '#A32638') : '#333F48';
+    var fill = bar ? (Math.abs(b - a) < 0.5 ? '#9AA3AD' : (b > a ? '#2E8B4A' : '#A32638')) : '#333F48';
     s += '<rect x="' + x0 + '" y="' + top_ + '" width="' + bw + '" height="' + Math.max(1, ht) + '" fill="' + fill + '"/>';
     var lab = bar ? fu(b - a, true) : money(a);
     s += '<text x="' + (x0 + bw / 2) + '" y="' + (top_ - 4) + '" font-size="12" text-anchor="middle" fill="#333F48" font-weight="bold">' + lab + '</text>';
@@ -165,10 +173,10 @@ function chart(m) {
   return s + '</svg>';
 }
 function glance(m) {
-  var cell = function (lbl, v, b) { return '<div><div class="lbl">' + lbl + '</div><div class="num ' + cls(v, b) + '">' + fu(v, true) + '</div></div>'; };
-  return cell('Naive report: net income vs. plan', m.ac.ni - m.st.ni, BASE.ac.ni - BASE.st.ni) +
+  var cell = function (lbl, v, b) { return '<div><div class="lbl">' + lbl + '</div><div class="num ' + cls(v, b) + ' ' + fuClass(v, true) + '">' + fu(v, true) + '</div></div>'; };
+  return cell('Revenue &amp; spending (execution)', m.ac.ni - m.fl.ni, BASE.ac.ni - BASE.fl.ni) +
          cell('Activity variance (volume)', m.fl.ni - m.st.ni, BASE.fl.ni - BASE.st.ni) +
-         cell('Revenue &amp; spending (execution)', m.ac.ni - m.fl.ni, BASE.ac.ni - BASE.fl.ni);
+         cell('Naive report: net income vs. plan', m.ac.ni - m.st.ni, BASE.ac.ni - BASE.st.ni);
 }
 function render() {
   var m = model(p);
